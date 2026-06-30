@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test
+        run: swift test
+
+      - name: Build release archives
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DINGDONG_BUILD="${GITHUB_RUN_NUMBER}" scripts/build_release_archives.sh "$VERSION"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            dist/release/DingDong-"$VERSION"-apple-silicon.zip \
+            dist/release/DingDong-"$VERSION"-intel.zip \
+            --title "DingDong $VERSION" \
+            --generate-notes

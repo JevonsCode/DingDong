@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DingDong - menu bar companion for local agents</title>
+    <meta name="description" content="DingDong is a native macOS menu bar companion for local AI agents, shared prompts, MCP references, skills, and clipboard workflows.">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./">
+        <img src="./assets/dingdong-icon.png" alt="DingDong icon">
+        <span>DingDong</span>
+      </a>
+      <nav>
+        <a href="#download">Download</a>
+        <a href="#agents">Agents</a>
+        <a href="https://github.com/JevonsCode/DingDong">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">macOS menu bar utility</p>
+          <h1>A small desktop hub for local AI agents.</h1>
+          <p class="lede">
+            DingDong keeps prompts, skills, MCP references, useful clipboard records,
+            and agent completion signals in one quiet place on your Mac.
+          </p>
+          <div class="actions">
+            <a class="primary" href="https://github.com/JevonsCode/DingDong/releases/latest">Download latest</a>
+            <a class="secondary" href="#agents">Connect an agent</a>
+          </div>
+        </div>
+
+        <div class="panel-demo" aria-label="DingDong panel preview">
+          <div class="menu-chip">
+            <img src="./assets/dingdong-alert-icon.png" alt="">
+            <span>3</span>
+          </div>
+          <div class="demo-window">
+            <div class="demo-title">
+              <img src="./assets/dingdong-icon.png" alt="">
+              <strong>DingDong</strong>
+            </div>
+            <div class="tabs">
+              <span>Today</span>
+              <span>Library</span>
+              <span class="active">Clipboard</span>
+            </div>
+            <article>
+              <b>Codex task complete</b>
+              <p>Tests passed. Release notes are ready.</p>
+            </article>
+            <article>
+              <b>user-taste skill</b>
+              <p>Available through the DingDong MCP bridge.</p>
+            </article>
+            <article>
+              <b>codebase-memory-mcp</b>
+              <p>Saved as an MCP server reference.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid" id="download">
+        <div>
+          <h2>Download</h2>
+          <p>Unsigned development builds are published for Apple Silicon and Intel Macs.</p>
+        </div>
+        <div class="download-card">
+          <a href="https://github.com/JevonsCode/DingDong/releases/latest">Latest release</a>
+          <small>macOS 14 or newer</small>
+        </div>
+        <div class="download-card">
+          <a href="./dingdong-release.json">Update metadata</a>
+          <small>Used by DingDong Settings</small>
+        </div>
+      </section>
+
+      <section class="grid" id="agents">
+        <div>
+          <h2>Agent bridge</h2>
+          <p>Install one MCP server, then let local agents query DingDong for summaries or load full resources only when needed.</p>
+        </div>
+        <pre><code>{
+  "mcpServers": {
+    "dingdong": {
+      "command": "/Applications/DingDong.app/Contents/MacOS/dingdong-mcp"
+    }
+  }
+}</code></pre>
+      </section>
+
+      <section class="cards">
+        <article>
+          <h3>Shared library</h3>
+          <p>Prompts, skills, MCP servers, knowledge references, and clipboard records live in one searchable local store.</p>
+        </article>
+        <article>
+          <h3>Clipboard that behaves</h3>
+          <p>Open with <kbd>⌘⇧V</kbd>, preview with space, paste with return, and keep sensitive records out of agent context by default.</p>
+        </article>
+        <article>
+          <h3>Local by default</h3>
+          <p>The app listens on <code>127.0.0.1</code>. Network access is only used for checking the public release JSON.</p>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      <span>DingDong</span>
+      <a href="https://github.com/JevonsCode/DingDong">Source</a>
+      <a href="https://github.com/JevonsCode/DingDong/releases/latest">Releases</a>
+    </footer>
+  </body>
+</html>
