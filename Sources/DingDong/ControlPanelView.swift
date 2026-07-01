@@ -527,7 +527,7 @@ struct ControlPanelView: View {
                 Label(text(.copyPrepare), systemImage: "wand.and.stars")
                     .labelStyle(.iconOnly)
             }
-            .help(text(.copyPrepare))
+            .instantHoverHelp(text(.copyPrepare))
             .buttonStyle(IconButtonStyle(isProminent: true, size: 34))
 
             Button {
@@ -536,7 +536,7 @@ struct ControlPanelView: View {
                 Label(text(.copyWorkbench), systemImage: "rectangle.stack.badge.play")
                     .labelStyle(.iconOnly)
             }
-            .help(text(.copyWorkbench))
+            .instantHoverHelp(text(.copyWorkbench))
             .buttonStyle(IconButtonStyle(size: 34))
 
             Button {
@@ -545,7 +545,7 @@ struct ControlPanelView: View {
                 Label(text(.toolkit), systemImage: "wrench.and.screwdriver")
                     .labelStyle(.iconOnly)
             }
-            .help(text(.toolkit))
+            .instantHoverHelp(text(.toolkit))
             .buttonStyle(IconButtonStyle(size: 34))
         }
         .padding(13)
@@ -574,7 +574,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "tray.full")
                 }
-                .help(text(.openLibrary))
+                .instantHoverHelp(text(.openLibrary))
                 .buttonStyle(.bordered)
             }
 
@@ -628,7 +628,7 @@ struct ControlPanelView: View {
                     Label(text(.startup), systemImage: "play.circle")
                         .labelStyle(.iconOnly)
                 }
-                .help(text(.agentStartupCommand))
+                .instantHoverHelp(text(.agentStartupCommand))
                 .buttonStyle(.borderedProminent)
 
                 Button {
@@ -637,7 +637,7 @@ struct ControlPanelView: View {
                     Label(text(.toolkit), systemImage: "wrench.and.screwdriver")
                         .labelStyle(.iconOnly)
                 }
-                .help(text(.agentToolkitCommand))
+                .instantHoverHelp(text(.agentToolkitCommand))
                 .buttonStyle(.bordered)
             }
 
@@ -695,7 +695,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "doc.on.doc")
                 }
-                .help(text(.copyMemory))
+                .instantHoverHelp(text(.copyMemory))
                 .buttonStyle(.bordered)
 
                 Button {
@@ -703,7 +703,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "tray.full")
                 }
-                .help(text(.openMemoryLibrary))
+                .instantHoverHelp(text(.openMemoryLibrary))
                 .buttonStyle(.bordered)
             }
 
@@ -746,7 +746,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "doc.on.doc")
                 }
-                .help(text(.agentWorkbenchCommand))
+                .instantHoverHelp(text(.agentWorkbenchCommand))
                 .buttonStyle(.borderedProminent)
 
                 Button {
@@ -754,7 +754,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "tray.full")
                 }
-                .help(text(.openSessionLibrary))
+                .instantHoverHelp(text(.openSessionLibrary))
                 .buttonStyle(.bordered)
             }
 
@@ -826,14 +826,14 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "number")
                 }
-                .help(text(.copyResourceID))
+                .instantHoverHelp(text(.copyResourceID))
 
                 Button {
                     controller.openSessionLibrary()
                 } label: {
                     Image(systemName: "arrow.up.forward.square")
                 }
-                .help(text(.openSessionLibrary))
+                .instantHoverHelp(text(.openSessionLibrary))
             }
             .buttonStyle(.bordered)
         }
@@ -883,14 +883,14 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "doc.on.doc")
                 }
-                .help(text(.copyContent))
+                .instantHoverHelp(text(.copyContent))
 
                 Button {
                     controller.openMemoryLibrary()
                 } label: {
                     Image(systemName: "arrow.up.forward.square")
                 }
-                .help(text(.openMemoryLibrary))
+                .instantHoverHelp(text(.openMemoryLibrary))
             }
             .buttonStyle(.bordered)
         }
@@ -943,14 +943,14 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "number")
                 }
-                .help(text(.copyResourceID))
+                .instantHoverHelp(text(.copyResourceID))
 
                 Button {
                     controller.openHandoffLibrary()
                 } label: {
                     Image(systemName: "arrow.up.forward.square")
                 }
-                .help(text(.openLibrary))
+                .instantHoverHelp(text(.openLibrary))
             }
             .buttonStyle(.bordered)
         }
@@ -1053,7 +1053,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "point.3.connected.trianglepath.dotted")
                 }
-                .help(text(.api))
+                .instantHoverHelp(text(.api))
                 .buttonStyle(.bordered)
             }
 
@@ -1346,7 +1346,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "xmark")
                 }
-                .help(text(.close))
+                .instantHoverHelp(text(.close))
                 .buttonStyle(RowIconButtonStyle())
             }
 
@@ -1404,7 +1404,7 @@ struct ControlPanelView: View {
             } label: {
                 Image(systemName: "doc.on.doc")
             }
-            .help(text(.copyFilePath))
+            .instantHoverHelp(text(.copyFilePath))
             .buttonStyle(RowIconButtonStyle())
         }
         .padding(8)
@@ -1502,7 +1502,7 @@ struct ControlPanelView: View {
                 }
                 .frame(width: 18, height: 18)
             }
-            .help(clipboardDetailsTitle)
+            .instantHoverHelp(clipboardDetailsTitle)
             .buttonStyle(IconButtonStyle(isProminent: isClipboardDetailsExpanded || hasActiveClipboardScope, size: 34))
         }
         .padding(10)
@@ -1527,7 +1527,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "tray.full")
                 }
-                .help(text(.openGroup))
+                .instantHoverHelp(text(.openGroup))
                 .buttonStyle(IconButtonStyle(size: 30))
             }
 
@@ -1639,7 +1639,7 @@ struct ControlPanelView: View {
                     Label(text(.copyInsights), systemImage: "sparkle.magnifyingglass")
                         .labelStyle(.iconOnly)
                 }
-                .help(text(.copyInsights))
+                .instantHoverHelp(text(.copyInsights))
                 .buttonStyle(.bordered)
 
                 Button {
@@ -1648,7 +1648,7 @@ struct ControlPanelView: View {
                     Label(text(.copyDigest), systemImage: "doc.text.magnifyingglass")
                         .labelStyle(.iconOnly)
                 }
-                .help(text(.copyDigest))
+                .instantHoverHelp(text(.copyDigest))
                 .buttonStyle(.borderedProminent)
             }
 
@@ -1789,7 +1789,7 @@ struct ControlPanelView: View {
             .frame(width: 118, alignment: .leading)
         }
         .buttonStyle(SnippetButtonStyle())
-        .help(text(.restoreClipboard))
+        .instantHoverHelp(text(.restoreClipboard))
     }
 
     @ViewBuilder
@@ -2275,7 +2275,7 @@ struct ControlPanelView: View {
             } label: {
                 Image(systemName: "doc.on.doc")
             }
-            .help(text(.copyTemplate))
+            .instantHoverHelp(text(.copyTemplate))
             .buttonStyle(RowIconButtonStyle())
         }
         .padding(10)
@@ -2680,7 +2680,7 @@ struct ControlPanelView: View {
                     } label: {
                         Image(systemName: "folder.badge.gearshape")
                     }
-                    .help(text(.scanKnowledge))
+                    .instantHoverHelp(text(.scanKnowledge))
                 }
 
                 if item.type == .clipboard {
@@ -2689,14 +2689,14 @@ struct ControlPanelView: View {
                     } label: {
                         Image(systemName: "arrowshape.turn.up.left")
                     }
-                    .help(text(.restoreClipboard))
+                    .instantHoverHelp(text(.restoreClipboard))
 
                     Button {
                         controller.promoteClipboardToPrompt(item)
                     } label: {
                         Image(systemName: "wand.and.sparkles")
                     }
-                    .help(text(.saveAsPrompt))
+                    .instantHoverHelp(text(.saveAsPrompt))
                 }
 
                 Button {
@@ -2704,14 +2704,14 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: item.pinned ? "pin.fill" : "pin")
                 }
-                .help(item.pinned ? text(.unpin) : text(.pin))
+                .instantHoverHelp(item.pinned ? text(.unpin) : text(.pin))
 
                 Button {
                     controller.copyResourceContent(item)
                 } label: {
                     Image(systemName: "doc.on.doc")
                 }
-                .help(text(.copyContent))
+                .instantHoverHelp(text(.copyContent))
 
                 if item.type != .clipboard {
                     Button {
@@ -2719,7 +2719,7 @@ struct ControlPanelView: View {
                     } label: {
                         Image(systemName: "number")
                     }
-                    .help(text(.copyResourceID))
+                    .instantHoverHelp(text(.copyResourceID))
                 }
 
                 Button {
@@ -2733,7 +2733,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "pencil")
                 }
-                .help(text(.edit))
+                .instantHoverHelp(text(.edit))
 
                 Button {
                     controller.deleteResource(item)
@@ -2744,7 +2744,7 @@ struct ControlPanelView: View {
                 } label: {
                     Image(systemName: "trash")
                 }
-                .help(text(.delete))
+                .instantHoverHelp(text(.delete))
             }
             .frame(width: 88, alignment: .trailing)
             .buttonStyle(RowIconButtonStyle())
@@ -4307,28 +4307,28 @@ struct ResourceManagerWindowView: View {
                 } label: {
                     Image(systemName: item.pinned ? "pin.fill" : "pin")
                 }
-                .help(item.pinned ? localized("取消置顶", "Unpin") : localized("置顶", "Pin"))
+                .instantHoverHelp(item.pinned ? localized("取消置顶", "Unpin") : localized("置顶", "Pin"))
 
                 Button {
                     controller.copyResourceContent(item)
                 } label: {
                     Image(systemName: "doc.on.doc")
                 }
-                .help(localized("复制内容", "Copy content"))
+                .instantHoverHelp(localized("复制内容", "Copy content"))
 
                 Button {
                     populateDraft(with: item)
                 } label: {
                     Image(systemName: "pencil")
                 }
-                .help(localized("编辑", "Edit"))
+                .instantHoverHelp(localized("编辑", "Edit"))
 
                 Button {
                     controller.deleteResource(item)
                 } label: {
                     Image(systemName: "trash")
                 }
-                .help(localized("删除", "Delete"))
+                .instantHoverHelp(localized("删除", "Delete"))
             }
             .buttonStyle(ControlButtonStyle())
         }
@@ -5472,6 +5472,46 @@ private struct RowIconButtonStyle: ButtonStyle {
             .frame(width: 30, height: 30)
             .background(configuration.isPressed ? PanelTheme.field.opacity(0.72) : PanelTheme.field, in: RoundedRectangle(cornerRadius: 7))
             .overlay(RoundedRectangle(cornerRadius: 7).stroke(PanelTheme.border, lineWidth: 1))
+    }
+}
+
+private struct InstantHoverHelpModifier: ViewModifier {
+    let title: String
+    @State private var isHovered = false
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .top) {
+                if isHovered {
+                    Text(title)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(PanelTheme.textPrimary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(PanelTheme.surface, in: Capsule())
+                        .overlay(Capsule().stroke(PanelTheme.border, lineWidth: 1))
+                        .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
+                        .offset(y: -30)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        .allowsHitTesting(false)
+                        .zIndex(30)
+                }
+            }
+            .zIndex(isHovered ? 30 : 0)
+            .onHover { hovering in
+                withAnimation(.easeOut(duration: 0.12)) {
+                    isHovered = hovering
+                }
+            }
+            .help(title)
+    }
+}
+
+private extension View {
+    func instantHoverHelp(_ title: String) -> some View {
+        modifier(InstantHoverHelpModifier(title: title))
     }
 }
 
