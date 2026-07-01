@@ -1125,20 +1125,6 @@ struct ControlPanelView: View {
             Spacer()
 
             Button {
-                if isImportingResources {
-                    resetImportDraft()
-                    isImportingResources = false
-                } else {
-                    resetResourceDraft()
-                    isAddingResource = false
-                    isImportingResources = true
-                }
-            } label: {
-                Label(isImportingResources ? text(.close) : text(.importAction), systemImage: isImportingResources ? "xmark" : "square.and.arrow.down")
-            }
-            .buttonStyle(ControlButtonStyle())
-
-            Button {
                 if isAddingResource {
                     resetResourceDraft()
                     isAddingResource = false
@@ -2176,7 +2162,6 @@ struct ControlPanelView: View {
                 apiLine(text(.apiLibrary), "GET /library?type=prompt&q=review&limit=20")
                 apiLine(text(.apiGroups), "GET /library/groups?type=prompt")
                 apiLine(text(.apiAdd), "POST /library")
-                apiLine(text(.apiImport), "POST /library/import")
                 apiLine(text(.apiExport), "GET /library/export?limit=200")
                 apiLine(text(.knowledge), "GET /knowledge/index?path=/docs&limit=20")
                 apiLine(text(.apiTemplates), "GET /agent/templates")
@@ -3929,10 +3914,334 @@ enum CompanionTab: CaseIterable {
     }
 }
 
+struct ResourceManagerWindowView: View {
+    @ObservedObject var controller: StatusController
+    @State private var query = ""
+    @State private var selectedType: ResourceType?
+    @State private var selectedGroup: String?
+
+    private var managedTypes: [ResourceType] {
+        [.prompt, .skill, .mcp, .knowledge]
+    }
+
+    private var managedResources: [ResourceItem] {
+        controller.resources.filter { managedTypes.contains($0.type) }
+    }
+
+    private var groups: [String] {
+        var seen: Set<String> = []
+        return managedResources.compactMap { item in
+            let group = item.group.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !group.isEmpty else {
+                return nil
+            }
+
+            let key = group.lowercased()
+            guard !seen.contains(key) else {
+                return nil
+            }
+
+            seen.insert(key)
+            return group
+        }
+        .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    private var filteredResources: [ResourceItem] {
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        return managedResources.filter { item in
+            if let selectedType, item.type != selectedType {
+                return false
+            }
+
+            if let selectedGroup, item.group.localizedCaseInsensitiveCompare(selectedGroup) != .orderedSame {
+                return false
+            }
+
+            guard !needle.isEmpty else {
+                return true
+            }
+
+            return item.title.localizedCaseInsensitiveContains(needle)
+                || item.content.localizedCaseInsensitiveContains(needle)
+                || item.group.localizedCaseInsensitiveContains(needle)
+                || item.tags.contains { $0.localizedCaseInsensitiveContains(needle) }
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            sidebar
+            Divider()
+            content
+        }
+        .frame(minWidth: 760, minHeight: 560)
+        .foregroundStyle(PanelTheme.textPrimary)
+        .background(PanelTheme.background)
+        .onAppear {
+            controller.refreshResources()
+        }
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(localized("资源管理", "Resources"))
+                    .font(.system(size: 20, weight: .bold))
+                Text(localized("Prompt、Skill、MCP 和知识路径", "Prompts, skills, MCP, and knowledge paths"))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(PanelTheme.textSecondary)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                sidebarButton(title: localized("全部", "All"), count: managedResources.count, isSelected: selectedType == nil && selectedGroup == nil) {
+                    selectedType = nil
+                    selectedGroup = nil
+                }
+
+                ForEach(managedTypes, id: \.self) { type in
+                    sidebarButton(
+                        title: type.displayTitle(language: controller.language),
+                        count: managedResources.filter { $0.type == type }.count,
+                        isSelected: selectedType == type
+                    ) {
+                        selectedType = type
+                        selectedGroup = nil
+                    }
+                }
+            }
+
+            if !groups.isEmpty {
+                Text(localized("分组", "Groups"))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(PanelTheme.textTertiary)
+                    .padding(.top, 4)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(groups, id: \.self) { group in
+                            sidebarButton(
+                                title: group,
+                                count: managedResources.filter { $0.group.localizedCaseInsensitiveCompare(group) == .orderedSame }.count,
+                                isSelected: selectedGroup == group
+                            ) {
+                                selectedGroup = group
+                                selectedType = nil
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer()
+
+            Button {
+                controller.setActiveTab(.library)
+                controller.showWindow(tab: .library)
+            } label: {
+                Label(localized("在面板中新增", "Add in Panel"), systemImage: "plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(SettingsChoiceButtonStyle(isSelected: true))
+        }
+        .padding(18)
+        .frame(width: 236)
+        .background(PanelTheme.surface.opacity(0.62))
+    }
+
+    private var content: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(PanelTheme.textSecondary)
+                TextField("", text: $query, prompt: Text(localized("搜索资源", "Search resources")).foregroundStyle(PanelTheme.textTertiary))
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13, weight: .medium))
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .opacity(query.isEmpty ? 0 : 1)
+                }
+                .buttonStyle(.plain)
+                .disabled(query.isEmpty)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 38)
+            .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 18)
+            .padding(.top, 18)
+
+            HStack {
+                Text(localized("\(filteredResources.count) 个资源", "\(filteredResources.count) resources"))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(PanelTheme.textSecondary)
+                Spacer()
+                Button {
+                    controller.refreshResources()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .help(localized("刷新", "Refresh"))
+                .buttonStyle(ControlButtonStyle())
+            }
+            .padding(.horizontal, 18)
+
+            ThinScrollableView(coordinateSpaceName: "dingdong.resource-manager.viewport") {
+                LazyVStack(spacing: 8) {
+                    if filteredResources.isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(filteredResources) { item in
+                            managerRow(item)
+                        }
+                    }
+                }
+                .padding(.horizontal, 18)
+                .padding(.bottom, 18)
+            }
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "square.stack.3d.up.slash")
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(PanelTheme.textTertiary)
+            Text(localized("暂无资源", "No resources"))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(PanelTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 180)
+        .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(PanelTheme.border, lineWidth: 1))
+    }
+
+    private func managerRow(_ item: ResourceItem) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon(for: item.type))
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(item.pinned ? PanelTheme.warning : PanelTheme.accent)
+                .frame(width: 28, height: 32)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(item.title)
+                    .font(.system(size: 14, weight: .bold))
+                    .lineLimit(2)
+
+                Text(item.content)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(PanelTheme.textSecondary)
+                    .lineLimit(2)
+
+                HStack(spacing: 6) {
+                    Text(item.type.displayTitle(language: controller.language))
+                        .font(.system(size: 10, weight: .bold))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(PanelTheme.field, in: Capsule())
+
+                    Text(item.group)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(PanelTheme.warning)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(PanelTheme.warning.opacity(0.12), in: Capsule())
+
+                    ForEach(item.tags.prefix(3), id: \.self) { tag in
+                        Text(tag)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(PanelTheme.accent)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(PanelTheme.accent.opacity(0.10), in: Capsule())
+                    }
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 6) {
+                Button {
+                    controller.togglePinned(item)
+                } label: {
+                    Image(systemName: item.pinned ? "pin.fill" : "pin")
+                }
+                .help(item.pinned ? localized("取消置顶", "Unpin") : localized("置顶", "Pin"))
+
+                Button {
+                    controller.copyResourceContent(item)
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                }
+                .help(localized("复制内容", "Copy content"))
+
+                Button {
+                    controller.searchText = item.title
+                    controller.setActiveTab(.library)
+                    controller.showWindow(tab: .library)
+                } label: {
+                    Image(systemName: "arrow.up.forward.app")
+                }
+                .help(localized("在面板中查看", "Open in panel"))
+
+                Button {
+                    controller.deleteResource(item)
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .help(localized("删除", "Delete"))
+            }
+            .buttonStyle(ControlButtonStyle())
+        }
+        .padding(12)
+        .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(PanelTheme.border, lineWidth: 1))
+    }
+
+    private func sidebarButton(title: String, count: Int, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.system(size: 12, weight: .bold))
+                    .lineLimit(1)
+                Spacer()
+                Text("\(count)")
+                    .font(.system(size: 10, weight: .bold))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(isSelected ? PanelTheme.textOnAccent.opacity(0.18) : PanelTheme.field, in: Capsule())
+            }
+            .frame(maxWidth: .infinity, minHeight: 32)
+        }
+        .buttonStyle(SettingsChoiceButtonStyle(isSelected: isSelected))
+    }
+
+    private func icon(for type: ResourceType) -> String {
+        switch type {
+        case .prompt:
+            "quote.bubble"
+        case .skill:
+            "wand.and.sparkles"
+        case .mcp:
+            "server.rack"
+        case .knowledge:
+            "folder"
+        case .clipboard:
+            "doc.on.clipboard"
+        }
+    }
+
+    private func localized(_ chinese: String, _ english: String) -> String {
+        controller.language == .chinese ? chinese : english
+    }
+}
+
 struct SettingsPanelView: View {
     @ObservedObject var controller: StatusController
     @ObservedObject var soundPlayer: SoundPlayer
     @State private var usageSnapshot = SystemUsageSnapshot.current()
+    @State private var showsAdvancedSettings = false
 
     var body: some View {
         ScrollView {
@@ -3945,7 +4254,7 @@ struct SettingsPanelView: View {
                 appearanceSection
                 clipboardSection
                 soundSection
-                apiSection
+                advancedSection
             }
             .padding(18)
         }
@@ -4278,6 +4587,22 @@ struct SettingsPanelView: View {
         }
     }
 
+    private var advancedSection: some View {
+        DisclosureGroup(isExpanded: $showsAdvancedSettings) {
+            VStack(alignment: .leading, spacing: 12) {
+                apiSection
+            }
+            .padding(.top, 8)
+        } label: {
+            Label(controller.language == .chinese ? "高级" : "Advanced", systemImage: "wrench.and.screwdriver")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(PanelTheme.textPrimary)
+        }
+        .padding(12)
+        .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(PanelTheme.border, lineWidth: 1))
+    }
+
     private var apiSection: some View {
         settingsSection(title: text(.endpoints), icon: "point.3.connected.trianglepath.dotted") {
             VStack(alignment: .leading, spacing: 8) {
@@ -4489,7 +4814,6 @@ struct SettingsPanelView: View {
             (text(.apiLibrary), "GET /library?type=prompt&q=review&limit=20"),
             (text(.apiGroups), "GET /library/groups?type=prompt"),
             (text(.apiAdd), "POST /library"),
-            (text(.apiImport), "POST /library/import"),
             (text(.apiExport), "GET /library/export?limit=200"),
             (text(.knowledge), "GET /knowledge/index?path=/docs&limit=20"),
             (text(.apiTemplates), "GET /agent/templates"),

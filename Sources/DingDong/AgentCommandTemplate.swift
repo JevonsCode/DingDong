@@ -214,16 +214,6 @@ struct AgentCommandTemplate: Equatable, Identifiable {
             command: "curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/context?q=review&limit=20'"
         ),
         AgentCommandTemplate(
-            id: "import-folder",
-            title: "Import Folder",
-            summary: "Bulk import direct children from a prompts, skills, MCP, or knowledge folder.",
-            command: """
-            curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/library/import \\
-              -H 'Content-Type: application/json' \\
-              -d '{"type":"knowledge","path":"/ABSOLUTE/PATH","group":"Knowledge","tags":["imported"],"limit":20}'
-            """
-        ),
-        AgentCommandTemplate(
             id: "scan-knowledge",
             title: "Scan Knowledge",
             summary: "Get lightweight file summaries for a local knowledge directory.",

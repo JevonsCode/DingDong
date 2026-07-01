@@ -343,6 +343,7 @@ final class StatusController: NSObject, ObservableObject {
     private var showcaseWindow: NSWindow?
     private var settingsWindow: NSWindow?
     private var usageGuideWindow: NSWindow?
+    private var resourceManagerWindow: NSWindow?
     private var sharingServicePicker: NSSharingServicePicker?
     private var quickPasteHotKeyController: ClipboardQuickPasteHotKeyController?
     private var quickPasteTargetApplication: NSRunningApplication?
@@ -1681,6 +1682,30 @@ final class StatusController: NSObject, ObservableObject {
         usageGuideWindow = window
     }
 
+    func showResourceManagerWindow() {
+        if let resourceManagerWindow {
+            resourceManagerWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let hostingController = makeResourceManagerHostingController()
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = language == .chinese ? "资源管理" : "Resource Manager"
+        window.setContentSize(NSSize(width: 860, height: 640))
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.titlebarAppearsTransparent = false
+        window.isMovableByWindowBackground = false
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = .windowBackgroundColor
+        window.isOpaque = true
+        window.level = .normal
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        resourceManagerWindow = window
+    }
+
     func showClipboardDetail(_ item: ResourceItem) {
         let view = ClipboardDetailPopoverView(
             item: item,
@@ -1791,6 +1816,7 @@ final class StatusController: NSObject, ObservableObject {
         let menu = NSMenu()
         menu.addItem(menuItem(title: statusMenuTitle(.openPanel), action: #selector(openPanelFromStatusMenu)))
         menu.addItem(menuItem(title: statusMenuTitle(.openClipboard), action: #selector(openClipboardFromStatusMenu)))
+        menu.addItem(menuItem(title: statusMenuTitle(.resourceManager), action: #selector(openResourceManagerFromStatusMenu)))
         menu.addItem(menuItem(title: statusMenuTitle(.toggleClipboardMonitoring), action: #selector(toggleClipboardMonitoringFromStatusMenu)))
         menu.addItem(.separator())
         menu.addItem(menuItem(title: statusMenuTitle(.usageGuide), action: #selector(openUsageGuideFromStatusMenu)))
@@ -1812,6 +1838,7 @@ final class StatusController: NSObject, ObservableObject {
     private enum StatusMenuAction {
         case openPanel
         case openClipboard
+        case resourceManager
         case toggleClipboardMonitoring
         case usageGuide
         case settings
@@ -1828,6 +1855,10 @@ final class StatusController: NSObject, ObservableObject {
             "打开剪贴板"
         case (.english, .openClipboard):
             "Open Clipboard"
+        case (.chinese, .resourceManager):
+            "资源管理"
+        case (.english, .resourceManager):
+            "Resource Manager"
         case (.chinese, .toggleClipboardMonitoring):
             isClipboardMonitoring ? "关闭剪贴板监听" : "开启剪贴板监听"
         case (.english, .toggleClipboardMonitoring):
@@ -1857,6 +1888,10 @@ final class StatusController: NSObject, ObservableObject {
 
     @objc private func toggleClipboardMonitoringFromStatusMenu() {
         toggleClipboardMonitoring()
+    }
+
+    @objc private func openResourceManagerFromStatusMenu() {
+        showResourceManagerWindow()
     }
 
     @objc private func openUsageGuideFromStatusMenu() {
@@ -2170,6 +2205,14 @@ final class StatusController: NSObject, ObservableObject {
     private func makeUsageGuideHostingController() -> NSHostingController<UsageGuidePanelView> {
         let hostingController = NSHostingController(
             rootView: UsageGuidePanelView(language: language)
+        )
+        applyPanelBackground(to: hostingController.view)
+        return hostingController
+    }
+
+    private func makeResourceManagerHostingController() -> NSHostingController<ResourceManagerWindowView> {
+        let hostingController = NSHostingController(
+            rootView: ResourceManagerWindowView(controller: self)
         )
         applyPanelBackground(to: hostingController.view)
         return hostingController

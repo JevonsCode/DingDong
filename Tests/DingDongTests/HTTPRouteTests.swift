@@ -38,7 +38,7 @@ struct HTTPRouteTests {
 
         #expect(response.statusCode == 200)
         #expect(body.contains(#""id":"ding-complete""#))
-        #expect(body.contains(#""id":"import-folder""#))
+        #expect(!body.contains(#""id":"import-folder""#))
         #expect(body.contains(#""id":"scan-knowledge""#))
         #expect(body.contains(#""id":"promote-clipboard""#))
         #expect(body.contains(#""id":"restore-clipboard""#))
