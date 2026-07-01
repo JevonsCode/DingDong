@@ -21,7 +21,8 @@ jobs:
       - name: Build release archives
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          DINGDONG_BUILD="${GITHUB_RUN_NUMBER}" scripts/build_release_archives.sh "$VERSION"
+          BUILD="$(python3 -c 'import json; print(json.load(open("docs/dingdong-release.json")).get("latestBuild") or "1")')"
+          DINGDONG_BUILD="$BUILD" scripts/build_release_archives.sh "$VERSION"
 
       - name: Publish GitHub release
         env:

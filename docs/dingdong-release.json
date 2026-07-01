@@ -1,17 +1,17 @@
 {
   "app": "DingDong",
-  "latestVersion": "0.1.0",
-  "latestBuild": "1",
-  "publishedAt": "2026-06-30T20:58:19Z",
+  "latestVersion": "0.2.0",
+  "latestBuild": "2",
+  "publishedAt": "2026-07-01T18:02:20Z",
   "website": "https://xn--8ovp9s.xn--m8txu.com/DingDong/",
   "releasePage": "https://github.com/JevonsCode/DingDong/releases/latest",
   "downloads": {
-    "appleSilicon": "https://github.com/JevonsCode/DingDong/releases/latest/download/DingDong-0.1.0-apple-silicon.zip",
-    "intel": "https://github.com/JevonsCode/DingDong/releases/latest/download/DingDong-0.1.0-intel.zip"
+    "appleSilicon": "https://github.com/JevonsCode/DingDong/releases/latest/download/DingDong-0.2.0-apple-silicon.zip",
+    "intel": "https://github.com/JevonsCode/DingDong/releases/latest/download/DingDong-0.2.0-intel.zip"
   },
   "notes": [
-    "Added the native DingDong MCP bridge for Codex and Claude Code.",
-    "Added release metadata checks in Settings.",
-    "Improved clipboard, resource library, and macOS menu bar workflows."
+    "Added launch-at-login settings and updated clipboard retention defaults to 1000 items for 90 days.",
+    "Split major UI, route, status, preference, clipboard monitoring, and menu bar code into smaller modules.",
+    "Added first-run onboarding, release regression docs, and stronger tests for preferences and clipboard monitoring."
   ]
 }

@@ -9,10 +9,11 @@ final class SoundPlayer: ObservableObject {
 
     private var player: AVAudioPlayer?
     private var chimePlayer: AVAudioPlayer?
-    private let customSoundPathKey = "dingdong.customSoundPath"
+    private let appPreferences: AppPreferences
 
-    init() {
-        customSoundPath = UserDefaults.standard.string(forKey: customSoundPathKey)
+    init(appPreferences: AppPreferences = .shared) {
+        self.appPreferences = appPreferences
+        customSoundPath = appPreferences.customSoundPath
     }
 
     func play(_ sound: DingSound) {
@@ -51,13 +52,13 @@ final class SoundPlayer: ObservableObject {
 
         if panel.runModal() == .OK, let url = panel.url {
             customSoundPath = url.path
-            UserDefaults.standard.set(url.path, forKey: customSoundPathKey)
+            appPreferences.customSoundPath = url.path
         }
     }
 
     func clearCustomSound() {
         customSoundPath = nil
-        UserDefaults.standard.removeObject(forKey: customSoundPathKey)
+        appPreferences.customSoundPath = nil
     }
 
     @discardableResult

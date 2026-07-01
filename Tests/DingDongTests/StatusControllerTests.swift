@@ -620,19 +620,19 @@ struct StatusControllerTests {
         #expect(try store.list(type: .prompt, query: "Too large", limit: nil).isEmpty)
     }
 
-    @Test func languagePreferenceUpdatesIdleMessages() {
-        let previousLanguage = UserDefaults.standard.string(forKey: "dingdong.language")
+    @Test func languagePreferenceUpdatesIdleMessages() throws {
+        let suiteName = "dingdong-language-preference-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
         defer {
-            if let previousLanguage {
-                UserDefaults.standard.set(previousLanguage, forKey: "dingdong.language")
-            } else {
-                UserDefaults.standard.removeObject(forKey: "dingdong.language")
-            }
+            defaults.removePersistentDomain(forName: suiteName)
         }
+        let appPreferences = AppPreferences(defaults: defaults)
 
         let controller = StatusController(
             soundPlayer: SoundPlayer(),
             resourceStore: InMemoryResourceStore(),
+            appPreferences: appPreferences,
             createsStatusItem: false
         )
 
@@ -1001,5 +1001,41 @@ struct StatusControllerTests {
 
         #expect(controller.activeAgentPresences.map(\.source) == ["Codex"])
         #expect(controller.activeAgentPresences.first?.task == "Working")
+    }
+
+    @Test func launchAtLoginToggleUsesInjectedManager() {
+        let launchAtLoginManager = StubLaunchAtLoginManager(isEnabled: false)
+        let controller = StatusController(
+            soundPlayer: SoundPlayer(),
+            resourceStore: InMemoryResourceStore(),
+            launchAtLoginManager: launchAtLoginManager,
+            createsStatusItem: false
+        )
+
+        #expect(controller.launchAtLoginEnabled == false)
+
+        controller.setLaunchAtLoginEnabled(true)
+
+        #expect(launchAtLoginManager.requestedStates == [true])
+        #expect(controller.launchAtLoginEnabled == true)
+    }
+}
+
+@MainActor
+private final class StubLaunchAtLoginManager: LaunchAtLoginManaging {
+    private(set) var requestedStates: [Bool] = []
+    private var enabled: Bool
+
+    var isEnabled: Bool {
+        enabled
+    }
+
+    init(isEnabled: Bool) {
+        enabled = isEnabled
+    }
+
+    func setEnabled(_ enabled: Bool) throws {
+        requestedStates.append(enabled)
+        self.enabled = enabled
     }
 }

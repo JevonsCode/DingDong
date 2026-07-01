@@ -9,6 +9,19 @@ struct ResourceStoreTests {
         #expect(item.group == "Prompts")
     }
 
+    @Test func defaultClipboardRetentionKeepsThousandItemsForThreeMonths() {
+        let defaultsName = "dingdong-resource-retention-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: defaultsName)!
+        defer {
+            defaults.removePersistentDomain(forName: defaultsName)
+        }
+
+        let policy = ResourceStore.clipboardRetentionPolicy(defaults: defaults)
+
+        #expect(policy.maxItems == 1000)
+        #expect(policy.maxAgeDays == 90)
+    }
+
     @Test func jsonStorePersistsAndFiltersResources() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("dingdong-resource-tests-\(UUID().uuidString)", isDirectory: true)

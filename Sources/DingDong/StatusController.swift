@@ -6,242 +6,6 @@ import Darwin
 import QuartzCore
 import SwiftUI
 
-enum ServerState: Equatable {
-    case running(port: UInt16)
-    case failed(String)
-
-    func displayText(language: AppLanguage) -> String {
-        switch self {
-        case .running(let port):
-            language.message(.apiListening, value: "\(port)")
-        case .failed(let message):
-            language.message(.apiFailed, value: message)
-        }
-    }
-}
-
-struct ResourceOverview: Equatable {
-    var total = 0
-    var pinned = 0
-    var handoffs = 0
-    var memories = 0
-    var prompts = 0
-    var skills = 0
-    var mcp = 0
-    var knowledge = 0
-    var clipboard = 0
-
-    init(items: [ResourceItem] = []) {
-        total = items.count
-        pinned = items.filter(\.pinned).count
-        handoffs = items.filter { $0.group == AgentHandoffRequest.group }.count
-        memories = items.filter { $0.group == AgentMemoryRequest.group }.count
-        prompts = items.filter { $0.type == .prompt }.count
-        skills = items.filter { $0.type == .skill }.count
-        mcp = items.filter { $0.type == .mcp }.count
-        knowledge = items.filter { $0.type == .knowledge }.count
-        clipboard = items.filter { $0.type == .clipboard }.count
-    }
-}
-
-struct SystemUsageSnapshot: Equatable {
-    var residentMemoryBytes: UInt64?
-    var storageBytes: UInt64?
-    var capturedAt: Date
-
-    static func current(
-        storageDirectory: URL = ResourceStore.defaultFileURL().deletingLastPathComponent(),
-        fileManager: FileManager = .default
-    ) -> SystemUsageSnapshot {
-        SystemUsageSnapshot(
-            residentMemoryBytes: currentResidentMemoryBytes(),
-            storageBytes: allocatedSize(of: storageDirectory, fileManager: fileManager),
-            capturedAt: Date()
-        )
-    }
-
-    private static func currentResidentMemoryBytes() -> UInt64? {
-        var info = mach_task_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<natural_t>.size)
-        let result = withUnsafeMutablePointer(to: &info) { pointer in
-            pointer.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { reboundPointer in
-                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), reboundPointer, &count)
-            }
-        }
-
-        guard result == KERN_SUCCESS else {
-            return nil
-        }
-
-        return UInt64(info.resident_size)
-    }
-
-    private static func allocatedSize(of directory: URL, fileManager: FileManager) -> UInt64? {
-        guard fileManager.fileExists(atPath: directory.path) else {
-            return 0
-        }
-
-        let keys: [URLResourceKey] = [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
-        guard let enumerator = fileManager.enumerator(
-            at: directory,
-            includingPropertiesForKeys: keys,
-            options: [.skipsPackageDescendants]
-        ) else {
-            return nil
-        }
-
-        var total: UInt64 = 0
-        for case let fileURL as URL in enumerator {
-            guard let values = try? fileURL.resourceValues(forKeys: Set(keys)),
-                  values.isRegularFile == true
-            else {
-                continue
-            }
-
-            let size = values.totalFileAllocatedSize ?? values.fileAllocatedSize ?? 0
-            total += UInt64(max(0, size))
-        }
-
-        return total
-    }
-}
-
-struct ClipboardSnippetShortcut: Equatable, Identifiable {
-    var alias: String
-    var item: ResourceItem
-
-    var id: String {
-        "\(alias)-\(item.id.uuidString)"
-    }
-}
-
-private final class NotificationObserverBox: @unchecked Sendable {
-    private let center: NotificationCenter
-    nonisolated(unsafe) var observer: NSObjectProtocol?
-
-    init(center: NotificationCenter) {
-        self.center = center
-    }
-
-    deinit {
-        if let observer {
-            center.removeObserver(observer)
-        }
-    }
-}
-
-struct ClipboardCopilotSummary: Equatable {
-    var total = 0
-    var usefulCandidates = 0
-    var snippetCandidates = 0
-    var hiddenSensitive = 0
-    var topGroup: String?
-    var preferredFilter: ClipboardSmartFilter = .all
-
-    init(items: [ResourceItem] = []) {
-        let clipboardItems = items.filter { $0.type == .clipboard }
-        let visibleItems = clipboardItems.filter { !$0.isSensitiveClipboard }
-        total = clipboardItems.count
-        usefulCandidates = visibleItems.filter(Self.isUsefulCandidate).count
-        snippetCandidates = visibleItems.filter { !Self.aliases(for: $0).isEmpty }.count
-        hiddenSensitive = clipboardItems.filter(\.isSensitiveClipboard).count
-        topGroup = ClipboardOverview(items: clipboardItems).groups.first?.name
-        preferredFilter = Self.preferredFilter(for: visibleItems)
-    }
-
-    var hasSuggestions: Bool {
-        usefulCandidates > 0 || snippetCandidates > 0 || hiddenSensitive > 0
-    }
-
-    private static func isUsefulCandidate(_ item: ResourceItem) -> Bool {
-        let usefulTags: Set<String> = ["command", "code", "json", "url", "path", "text"]
-        return !item.pinned && item.tags.contains { usefulTags.contains($0) }
-    }
-
-    private static func aliases(for item: ResourceItem) -> [String] {
-        item.tags.compactMap { tag in
-            let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard trimmed.lowercased().hasPrefix("alias:") else {
-                return nil
-            }
-
-            let alias = String(trimmed.dropFirst("alias:".count))
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            return alias.isEmpty ? nil : alias
-        }
-    }
-
-    private static func preferredFilter(for items: [ResourceItem]) -> ClipboardSmartFilter {
-        let priority: [ClipboardSmartFilter] = [.command, .code, .json, .url, .path, .email]
-        return priority.first { filter in
-            guard let tag = filter.tagQuery else {
-                return false
-            }
-            return items.contains { $0.tags.contains(tag) }
-        } ?? .all
-    }
-}
-
-struct CompanionReadiness: Equatable {
-    var resourceCount = 0
-    var promptCount = 0
-    var skillCount = 0
-    var mcpCount = 0
-    var knowledgeCount = 0
-    var memoryCount = 0
-    var clipboardCount = 0
-    var openHandoffCount = 0
-    var activeAgentCount = 0
-    var clipboardMonitoringEnabled = false
-
-    init(
-        resources: [ResourceItem] = [],
-        activeAgents: [AgentPresenceRecord] = [],
-        handoffStatusCounts: [String: Int] = [:],
-        clipboardMonitoringEnabled: Bool = false
-    ) {
-        resourceCount = resources.count
-        promptCount = resources.filter { $0.type == .prompt }.count
-        skillCount = resources.filter { $0.type == .skill }.count
-        mcpCount = resources.filter { $0.type == .mcp }.count
-        knowledgeCount = resources.filter { $0.type == .knowledge }.count
-        memoryCount = resources.filter { $0.group == AgentMemoryRequest.group }.count
-        clipboardCount = resources.filter { $0.type == .clipboard }.count
-        openHandoffCount = handoffStatusCounts["open", default: 0] + handoffStatusCounts["blocked", default: 0]
-        activeAgentCount = activeAgents.count
-        self.clipboardMonitoringEnabled = clipboardMonitoringEnabled
-    }
-
-    var score: Int {
-        var value = 0
-        if promptCount > 0 { value += 20 }
-        if skillCount > 0 { value += 15 }
-        if mcpCount > 0 { value += 15 }
-        if knowledgeCount > 0 { value += 20 }
-        if memoryCount > 0 { value += 10 }
-        if clipboardCount > 0 || clipboardMonitoringEnabled { value += 10 }
-        if activeAgentCount > 0 { value += 5 }
-        if openHandoffCount > 0 { value += 5 }
-        return min(value, 100)
-    }
-
-    var state: CompanionReadinessState {
-        if score >= 80 {
-            .ready
-        } else if score >= 45 {
-            .warming
-        } else {
-            .needsSetup
-        }
-    }
-}
-
-enum CompanionReadinessState: Equatable {
-    case ready
-    case warming
-    case needsSetup
-}
-
 @MainActor
 final class StatusController: NSObject, ObservableObject {
     @Published private(set) var lastMessage = "Waiting for an agent signal"
@@ -284,11 +48,12 @@ final class StatusController: NSObject, ObservableObject {
     @Published private(set) var panelDensity: PanelDensity = .comfortable
     @Published private(set) var defaultPanelTab: CompanionTab = .today
     @Published private(set) var releaseStatus = ReleaseStatus.currentOnly
+    @Published private(set) var launchAtLoginEnabled = false
     @Published private(set) var resourceManagerEditingResourceID: UUID?
     @Published var searchText = ""
 
     var isQuickPasteSessionActive: Bool {
-        quickPasteTargetApplication != nil
+        quickPasteFocusCoordinator.isSessionActive
     }
 
     var isQuickPasteAccessibilityTrusted: Bool {
@@ -330,6 +95,21 @@ final class StatusController: NSObject, ObservableObject {
         NSWorkspace.shared.open(releaseStatus.releasePageURL)
     }
 
+    func refreshLaunchAtLoginState() {
+        launchAtLoginEnabled = launchAtLoginManager.isEnabled
+    }
+
+    func setLaunchAtLoginEnabled(_ enabled: Bool) {
+        do {
+            try launchAtLoginManager.setEnabled(enabled)
+            launchAtLoginEnabled = launchAtLoginManager.isEnabled
+        } catch {
+            launchAtLoginEnabled = launchAtLoginManager.isEnabled
+            lastMessage = language == .chinese ? "无法更新开机启动设置" : "Could not update launch at login"
+            lastTriggerText = Date.now.formatted(date: .omitted, time: .standard)
+        }
+    }
+
     let soundPlayer: SoundPlayer
     let resourceStore: ResourceStoreProtocol
     let clipboardRecorder: ClipboardRecorder
@@ -337,6 +117,8 @@ final class StatusController: NSObject, ObservableObject {
     let agentPresenceStore: AgentPresenceStore
     let knowledgeIndexer: KnowledgeIndexer
     let libraryImporter: LibraryImporter
+    let launchAtLoginManager: LaunchAtLoginManaging
+    let appPreferences: AppPreferences
 
     private var statusItem: NSStatusItem?
     private var statusItemEventView: StatusItemEventView?
@@ -348,9 +130,18 @@ final class StatusController: NSObject, ObservableObject {
     private var resourceManagerWindow: NSWindow?
     private var sharingServicePicker: NSSharingServicePicker?
     private var quickPasteHotKeyController: ClipboardQuickPasteHotKeyController?
-    private var quickPasteTargetApplication: NSRunningApplication?
-    private var lastExternalApplication: NSRunningApplication?
-    private let workspaceActivationObserver = NotificationObserverBox(center: NSWorkspace.shared.notificationCenter)
+    private let quickPasteFocusCoordinator = QuickPasteFocusCoordinator()
+    private lazy var statusMenuController: StatusMenuController = {
+        let controller = StatusMenuController()
+        controller.onOpenPanel = { [weak self] in self?.showPopover() }
+        controller.onOpenClipboard = { [weak self] in self?.openClipboardList() }
+        controller.onOpenResourceManager = { [weak self] in self?.showResourceManagerWindow() }
+        controller.onToggleClipboardMonitoring = { [weak self] in self?.toggleClipboardMonitoring() }
+        controller.onOpenUsageGuide = { [weak self] in self?.showUsageGuideWindow() }
+        controller.onOpenSettings = { [weak self] in self?.showSettingsWindow() }
+        controller.onQuit = { [weak self] in self?.quit() }
+        return controller
+    }()
     private var visibleClipboardShortcutIDs: [UUID] = []
     private var deferredRefreshWorkItem: DispatchWorkItem?
     private var deferredLoadingEndWorkItem: DispatchWorkItem?
@@ -358,14 +149,8 @@ final class StatusController: NSObject, ObservableObject {
     private var releaseMetadataTask: URLSessionDataTask?
     private var contentLoadingGeneration = 0
     private var flashTimer: Timer?
-    private var clipboardTimer: Timer?
-    private var lastClipboardChangeCount = -1
     private var flashRemaining = 0
     private var flashIsHot = false
-    private let clipboardMonitoringKey = "dingdong.clipboard.monitoring"
-    private let languageKey = "dingdong.language"
-    private let clipboardFilterOrderKey = "dingdong.clipboard.filterOrder"
-    private let clipboardGroupOrderKey = "dingdong.clipboard.groupOrder"
     private let deferredRefreshDelay: TimeInterval = 0.12
     private let minimumContentLoadingDuration: TimeInterval = 0.72
 
@@ -377,6 +162,8 @@ final class StatusController: NSObject, ObservableObject {
         agentPresenceStore: AgentPresenceStore = AgentPresenceStore(),
         knowledgeIndexer: KnowledgeIndexer = KnowledgeIndexer(),
         libraryImporter: LibraryImporter = LibraryImporter(),
+        launchAtLoginManager: LaunchAtLoginManaging = ServiceManagementLaunchAtLoginManager(),
+        appPreferences: AppPreferences = .shared,
         createsStatusItem: Bool = true
     ) {
         self.soundPlayer = soundPlayer
@@ -386,12 +173,14 @@ final class StatusController: NSObject, ObservableObject {
         self.agentPresenceStore = agentPresenceStore
         self.knowledgeIndexer = knowledgeIndexer
         self.libraryImporter = libraryImporter
+        self.launchAtLoginManager = launchAtLoginManager
+        self.appPreferences = appPreferences
         super.init()
         restoreLanguagePreference()
         restorePanelPreferences()
         restoreClipboardFilterPreferences()
         restoreClipboardRetentionPolicy()
-        startTrackingExternalApplicationActivation()
+        refreshLaunchAtLoginState()
         configurePopover()
         refreshResources()
         restoreClipboardMonitoringPreference()
@@ -400,6 +189,10 @@ final class StatusController: NSObject, ObservableObject {
             configureStatusItem()
             refreshReleaseStatus()
         }
+    }
+
+    private lazy var clipboardMonitoringService = ClipboardMonitoringService(reader: clipboardRecorder.reader) { [weak self] in
+        _ = self?.captureClipboard(source: "Monitor")
     }
 
     func setServerState(_ state: ServerState) {
@@ -414,7 +207,7 @@ final class StatusController: NSObject, ObservableObject {
         let wasIdleMessage = lastMessage == language.text(.waitingForAgent)
         let wasIdleTrigger = lastTriggerText == language.text(.noTriggers)
         language = nextLanguage
-        UserDefaults.standard.set(nextLanguage.rawValue, forKey: languageKey)
+        appPreferences.language = nextLanguage
 
         if wasIdleMessage {
             lastMessage = nextLanguage.text(.waitingForAgent)
@@ -1034,45 +827,27 @@ final class StatusController: NSObject, ObservableObject {
     }
 
     private func startClipboardMonitoring() {
-        clipboardTimer?.invalidate()
+        clipboardMonitoringService.start()
         isClipboardMonitoring = true
-        UserDefaults.standard.set(true, forKey: clipboardMonitoringKey)
-        lastClipboardChangeCount = clipboardRecorder.reader.changeCount
+        appPreferences.isClipboardMonitoringEnabled = true
         refreshResources()
-        clipboardTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.pollClipboard()
-            }
-        }
     }
 
     private func stopClipboardMonitoring() {
-        clipboardTimer?.invalidate()
-        clipboardTimer = nil
+        clipboardMonitoringService.stop()
         isClipboardMonitoring = false
-        UserDefaults.standard.set(false, forKey: clipboardMonitoringKey)
+        appPreferences.isClipboardMonitoringEnabled = false
         refreshResources()
     }
 
-    private func pollClipboard() {
-        let currentChangeCount = clipboardRecorder.reader.changeCount
-        guard currentChangeCount != lastClipboardChangeCount else {
-            return
-        }
-
-        lastClipboardChangeCount = currentChangeCount
-        _ = captureClipboard(source: "Monitor")
-    }
-
     private func restoreClipboardMonitoringPreference() {
-        if UserDefaults.standard.bool(forKey: clipboardMonitoringKey) {
+        if appPreferences.isClipboardMonitoringEnabled {
             startClipboardMonitoring()
         }
     }
 
     private func restoreLanguagePreference() {
-        if let value = UserDefaults.standard.string(forKey: languageKey),
-           let savedLanguage = AppLanguage(rawValue: value) {
+        if let savedLanguage = appPreferences.language {
             language = savedLanguage
         }
 
@@ -1761,7 +1536,7 @@ final class StatusController: NSObject, ObservableObject {
             return true
         }
 
-        quickPasteTargetApplication = resolveQuickPasteTargetApplication()
+        quickPasteFocusCoordinator.captureTargetApplication()
         _ = requestQuickPasteAccessibilityIfNeeded(prompts: true)
         openClipboardList(activatesApp: true)
         if panelWindow?.isVisible == true {
@@ -1822,101 +1597,13 @@ final class StatusController: NSObject, ObservableObject {
     }
 
     private func showStatusItemMenu() {
-        guard let statusItem, let button = statusItem.button else {
+        guard let statusItem else {
             return
         }
 
-        let menu = NSMenu()
-        menu.addItem(menuItem(title: statusMenuTitle(.openPanel), action: #selector(openPanelFromStatusMenu)))
-        menu.addItem(menuItem(title: statusMenuTitle(.openClipboard), action: #selector(openClipboardFromStatusMenu)))
-        menu.addItem(menuItem(title: statusMenuTitle(.resourceManager), action: #selector(openResourceManagerFromStatusMenu)))
-        menu.addItem(menuItem(title: statusMenuTitle(.toggleClipboardMonitoring), action: #selector(toggleClipboardMonitoringFromStatusMenu)))
-        menu.addItem(.separator())
-        menu.addItem(menuItem(title: statusMenuTitle(.usageGuide), action: #selector(openUsageGuideFromStatusMenu)))
-        menu.addItem(menuItem(title: statusMenuTitle(.settings), action: #selector(openSettingsFromStatusMenu)))
-        menu.addItem(.separator())
-        menu.addItem(menuItem(title: statusMenuTitle(.quit), action: #selector(quitFromStatusMenu)))
-
-        button.highlight(true)
-        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height), in: button)
-        button.highlight(false)
-    }
-
-    private func menuItem(title: String, action: Selector) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
-        item.target = self
-        return item
-    }
-
-    private enum StatusMenuAction {
-        case openPanel
-        case openClipboard
-        case resourceManager
-        case toggleClipboardMonitoring
-        case usageGuide
-        case settings
-        case quit
-    }
-
-    private func statusMenuTitle(_ action: StatusMenuAction) -> String {
-        switch (language, action) {
-        case (.chinese, .openPanel):
-            "打开面板"
-        case (.english, .openPanel):
-            "Open Panel"
-        case (.chinese, .openClipboard):
-            "打开剪贴板"
-        case (.english, .openClipboard):
-            "Open Clipboard"
-        case (.chinese, .resourceManager):
-            "资源管理"
-        case (.english, .resourceManager):
-            "Resource Manager"
-        case (.chinese, .toggleClipboardMonitoring):
-            isClipboardMonitoring ? "关闭剪贴板监听" : "开启剪贴板监听"
-        case (.english, .toggleClipboardMonitoring):
-            isClipboardMonitoring ? "Stop Clipboard Monitoring" : "Start Clipboard Monitoring"
-        case (.chinese, .usageGuide):
-            "使用说明"
-        case (.english, .usageGuide):
-            "User Guide"
-        case (.chinese, .settings):
-            "设置"
-        case (.english, .settings):
-            "Settings"
-        case (.chinese, .quit):
-            "退出"
-        case (.english, .quit):
-            "Quit"
-        }
-    }
-
-    @objc private func openPanelFromStatusMenu() {
-        showPopover()
-    }
-
-    @objc private func openClipboardFromStatusMenu() {
-        openClipboardList()
-    }
-
-    @objc private func toggleClipboardMonitoringFromStatusMenu() {
-        toggleClipboardMonitoring()
-    }
-
-    @objc private func openResourceManagerFromStatusMenu() {
-        showResourceManagerWindow()
-    }
-
-    @objc private func openUsageGuideFromStatusMenu() {
-        showUsageGuideWindow()
-    }
-
-    @objc private func openSettingsFromStatusMenu() {
-        showSettingsWindow()
-    }
-
-    @objc private func quitFromStatusMenu() {
-        quit()
+        statusMenuController.language = language
+        statusMenuController.isClipboardMonitoring = isClipboardMonitoring
+        statusMenuController.show(from: statusItem)
     }
 
     private func startQuickPasteHotKeys() {
@@ -1931,7 +1618,7 @@ final class StatusController: NSObject, ObservableObject {
     private func stopQuickPasteHotKeys(clearsTarget: Bool = true) {
         quickPasteHotKeyController?.stop()
         if clearsTarget {
-            quickPasteTargetApplication = nil
+            quickPasteFocusCoordinator.clearTarget()
         }
     }
 
@@ -1942,12 +1629,12 @@ final class StatusController: NSObject, ObservableObject {
     }
 
     private func pasteRestoredClipboardToTargetApplication() {
-        let targetApplication = quickPasteTargetApplication
+        let targetApplication = quickPasteFocusCoordinator.targetApplication
         hideClipboardDetail()
         stopQuickPasteHotKeys()
         hidePanelWithAnimation(panelWindow) { [weak self] in
-            self?.restoreFocusToTargetApplication(targetApplication) {
-                Self.postPasteShortcut()
+            self?.quickPasteFocusCoordinator.restoreFocus(to: targetApplication) {
+                QuickPasteFocusCoordinator.postPasteShortcut()
             }
         }
     }
@@ -1999,130 +1686,11 @@ final class StatusController: NSObject, ObservableObject {
         }
     }
 
-    private func restoreFocusToTargetApplication(_ targetApplication: NSRunningApplication?, completion: (() -> Void)? = nil) {
-        NSApp.deactivate()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            Self.activate(application: targetApplication)
-            if let completion {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
-                    completion()
-                }
-            }
-        }
-    }
-
-    private func startTrackingExternalApplicationActivation() {
-        if let application = Self.currentExternalFrontmostApplication() {
-            lastExternalApplication = application
-        }
-
-        workspaceActivationObserver.observer = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let application = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
-                return
-            }
-
-            Task { @MainActor in
-                self?.recordExternalApplication(application)
-            }
-        }
-    }
-
-    private func recordExternalApplication(_ application: NSRunningApplication) {
-        guard Self.isExternalApplication(application) else {
-            return
-        }
-
-        lastExternalApplication = application
-    }
-
-    private func resolveQuickPasteTargetApplication() -> NSRunningApplication? {
-        if let application = Self.currentExternalFrontmostApplication() {
-            lastExternalApplication = application
-            return application
-        }
-
-        guard let application = lastExternalApplication,
-              !application.isTerminated
-        else {
-            return nil
-        }
-
-        return application
-    }
-
-    private static func currentExternalFrontmostApplication() -> NSRunningApplication? {
-        guard let application = NSWorkspace.shared.frontmostApplication else {
-            return nil
-        }
-
-        guard isExternalApplication(application) else {
-            return nil
-        }
-
-        return application
-    }
-
-    private static func isExternalApplication(_ application: NSRunningApplication) -> Bool {
-        guard !application.isTerminated,
-              application.processIdentifier != NSRunningApplication.current.processIdentifier
-        else {
-            return false
-        }
-
-        if let bundleIdentifier = application.bundleIdentifier,
-           bundleIdentifier == Bundle.main.bundleIdentifier {
-            return false
-        }
-
-        return true
-    }
-
-    private static func activate(application: NSRunningApplication?) {
-        guard let application, !application.isTerminated else {
-            return
-        }
-
-        if #available(macOS 14.0, *) {
-            application.activate(options: [.activateAllWindows])
-        } else {
-            application.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
-        }
-    }
-
-    private static func postPasteShortcut() {
-        guard let source = CGEventSource(stateID: .combinedSessionState) else {
-            return
-        }
-
-        source.localEventsSuppressionInterval = 0
-        source.setLocalEventsFilterDuringSuppressionState(
-            [.permitLocalMouseEvents, .permitSystemDefinedEvents],
-            state: .eventSuppressionStateSuppressionInterval
-        )
-        let commandFlag = CGEventFlags(rawValue: CGEventFlags.maskCommand.rawValue | 0x000008)
-        let keyCode = CGKeyCode(kVK_ANSI_V)
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true)
-        keyDown?.flags = commandFlag
-        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false)
-        keyUp?.flags = commandFlag
-        keyDown?.post(tap: .cghidEventTap)
-        keyUp?.post(tap: .cghidEventTap)
-    }
-
     private func requestQuickPasteAccessibilityIfNeeded(prompts: Bool) -> Bool {
-        if AXIsProcessTrusted() {
+        if quickPasteFocusCoordinator.requestAccessibilityIfNeeded(prompts: prompts, openSettings: { [weak self] in
+            self?.openAccessibilityPrivacySettings()
+        }) {
             return true
-        }
-
-        if prompts {
-            let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
-            _ = AXIsProcessTrustedWithOptions(options)
-            openAccessibilityPrivacySettings()
         }
 
         lastMessage = language == .chinese
@@ -2133,7 +1701,7 @@ final class StatusController: NSObject, ObservableObject {
     }
 
     private func hidePopover(restoresFocus: Bool = false) {
-        let targetApplication = restoresFocus ? quickPasteTargetApplication : nil
+        let targetApplication = restoresFocus ? quickPasteFocusCoordinator.targetApplication : nil
         stopQuickPasteHotKeys()
         hideClipboardDetail()
         hidePanelWithAnimation(panelWindow) { [weak self] in
@@ -2141,7 +1709,7 @@ final class StatusController: NSObject, ObservableObject {
                 return
             }
 
-            self?.restoreFocusToTargetApplication(targetApplication)
+            self?.quickPasteFocusCoordinator.restoreFocus(to: targetApplication)
         }
     }
 
@@ -2293,7 +1861,7 @@ final class StatusController: NSObject, ObservableObject {
     }
 
     private func restorePanelPreferences() {
-        let preferences = PanelPreferences.load()
+        let preferences = appPreferences.loadPanelPreferences()
         panelBackgroundOpacity = preferences.backgroundOpacity
         panelDensity = preferences.density
         defaultPanelTab = preferences.defaultTab
@@ -2301,16 +1869,17 @@ final class StatusController: NSObject, ObservableObject {
     }
 
     private func restoreClipboardFilterPreferences() {
-        let defaults = UserDefaults.standard
-        let filterValues = defaults.stringArray(forKey: clipboardFilterOrderKey) ?? []
-        let filters = filterValues.compactMap(ClipboardSmartFilter.init(rawValue:))
+        let preferences = appPreferences.loadClipboardFilterPreferences()
+        let filters = preferences.filterOrder
         clipboardFilterOrder = Self.sanitizedClipboardFilterOrder(filters)
-        clipboardGroupOrder = Self.sanitizedClipboardGroupOrder(defaults.stringArray(forKey: clipboardGroupOrderKey) ?? [], groups: [])
+        clipboardGroupOrder = Self.sanitizedClipboardGroupOrder(preferences.groupOrder, groups: [])
     }
 
     private func saveClipboardFilterPreferences() {
-        UserDefaults.standard.set(clipboardFilterOrder.map(\.rawValue), forKey: clipboardFilterOrderKey)
-        UserDefaults.standard.set(clipboardGroupOrder, forKey: clipboardGroupOrderKey)
+        appPreferences.saveClipboardFilterPreferences(ClipboardFilterPreferences(
+            filterOrder: clipboardFilterOrder,
+            groupOrder: clipboardGroupOrder
+        ))
     }
 
     private func scheduleClipboardFilterPreferencesSave() {
@@ -2323,7 +1892,7 @@ final class StatusController: NSObject, ObservableObject {
     }
 
     private func savePanelPreferences() {
-        PanelPreferences.save(PanelPreferences(
+        appPreferences.savePanelPreferences(PanelPreferences(
             backgroundOpacity: panelBackgroundOpacity,
             density: panelDensity,
             defaultTab: defaultPanelTab
@@ -2549,55 +2118,5 @@ extension StatusController: NSWindowDelegate {
 
         hideClipboardDetail()
         stopQuickPasteHotKeys()
-    }
-}
-
-private final class StatusItemEventView: NSView {
-    var onLeftClick: (() -> Void)?
-    var onRightClick: (() -> Void)?
-
-    override var acceptsFirstResponder: Bool {
-        true
-    }
-
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
-        true
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        if event.modifierFlags.contains(.control) {
-            onRightClick?()
-        } else {
-            onLeftClick?()
-        }
-    }
-
-    override func rightMouseDown(with event: NSEvent) {
-        onRightClick?()
-    }
-}
-
-private final class FocusableFloatingPanel: NSPanel {
-    var onEscape: (() -> Void)?
-
-    override var canBecomeKey: Bool {
-        true
-    }
-
-    override var canBecomeMain: Bool {
-        true
-    }
-
-    override func cancelOperation(_ sender: Any?) {
-        onEscape?()
-    }
-
-    override func keyDown(with event: NSEvent) {
-        if event.keyCode == 53 {
-            onEscape?()
-            return
-        }
-
-        super.keyDown(with: event)
     }
 }

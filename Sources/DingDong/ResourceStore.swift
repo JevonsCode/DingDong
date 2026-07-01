@@ -194,10 +194,10 @@ final class ResourceStore: ResourceStoreProtocol {
 }
 
 struct ClipboardRetentionPolicy: Equatable {
-    static let defaultMaxItems = 200
+    static let defaultMaxItems = 1000
     static let minMaxItems = 20
     static let maxMaxItems = 1000
-    static let defaultMaxAgeDays = 30
+    static let defaultMaxAgeDays = 90
     static let minMaxAgeDays = 1
     static let maxMaxAgeDays = 365
     static let maxItemsKey = "dingdong.clipboard.maxItems"
