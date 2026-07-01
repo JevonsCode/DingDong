@@ -398,7 +398,7 @@ struct ControlPanelView: View {
             Button {
                 controller.hideCurrentPanel()
             } label: {
-                Image(systemName: "rectangle.compress.vertical")
+                Image(systemName: "chevron.up")
             }
             .help(controller.language == .chinese ? "收起面板" : "Hide Panel")
             .buttonStyle(IconButtonStyle(size: 32))
@@ -428,7 +428,7 @@ struct ControlPanelView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.leading, showsShortcut ? 2 : 0)
-                        .padding(.trailing, showsShortcut ? 34 : 0)
+                        .padding(.trailing, showsShortcut ? 46 : 0)
 
                         if let shortcut, showsShortcut {
                             HStack {
@@ -436,9 +436,9 @@ struct ControlPanelView: View {
                                 Text(shortcut)
                                     .font(.system(.caption2, design: .monospaced, weight: .bold))
                                     .foregroundStyle(controller.activeTab == tab ? PanelTheme.textOnAccent.opacity(0.86) : PanelTheme.textTertiary)
-                                    .frame(width: 28, height: 18)
+                                    .frame(width: 34, height: 18)
                             }
-                            .padding(.trailing, 7)
+                            .padding(.trailing, 12)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -446,7 +446,7 @@ struct ControlPanelView: View {
                 .buttonStyle(TabButtonStyle(isSelected: controller.activeTab == tab))
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 18)
         .padding(.bottom, 12)
     }
 
@@ -2821,25 +2821,11 @@ struct ControlPanelView: View {
         let group = resourceGroupBadgeTitle(item.group)
         let visibleTags = isCompact ? Array(tags.prefix(2)) : tags
 
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 5) {
-                resourceGroupChip(group)
+        WrappingHStack(spacing: 4, rowSpacing: 4) {
+            resourceGroupChip(group)
 
-                ForEach(visibleTags, id: \.self) { tag in
-                    resourceTagChip(tag)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                resourceGroupChip(group)
-
-                if !visibleTags.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(visibleTags, id: \.self) { tag in
-                            resourceTagChip(tag)
-                        }
-                    }
-                }
+            ForEach(visibleTags, id: \.self) { tag in
+                resourceTagChip(tag)
             }
         }
         .help(([group] + visibleTags.map { "#\($0)" }).joined(separator: " · "))
@@ -2849,8 +2835,8 @@ struct ControlPanelView: View {
         Text(group)
             .font(.system(size: 9, weight: .semibold))
             .foregroundStyle(PanelTheme.textOnWarm)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
             .background(PanelTheme.warningSoft, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
@@ -4274,30 +4260,9 @@ struct ResourceManagerWindowView: View {
                     .foregroundStyle(PanelTheme.textSecondary)
                     .lineLimit(2)
 
-                HStack(spacing: 6) {
-                    Text(item.type.displayTitle(language: controller.language))
-                        .font(.system(size: 10, weight: .bold))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(PanelTheme.field, in: Capsule())
-
-                    Text(item.group)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(PanelTheme.warning)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(PanelTheme.warning.opacity(0.12), in: Capsule())
-
-                    ForEach(item.tags.prefix(3), id: \.self) { tag in
-                        Text(tag)
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(PanelTheme.accent)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 4)
-                            .background(PanelTheme.accent.opacity(0.10), in: Capsule())
-                    }
-                }
+                managerMetadataChips(for: item)
             }
+            .layoutPriority(1)
 
             Spacer(minLength: 8)
 
@@ -4330,11 +4295,75 @@ struct ResourceManagerWindowView: View {
                 }
                 .instantHoverHelp(localized("删除", "Delete"))
             }
+            .frame(width: 152, alignment: .trailing)
             .buttonStyle(ControlButtonStyle())
         }
         .padding(12)
         .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(PanelTheme.border, lineWidth: 1))
+    }
+
+    private func managerMetadataChips(for item: ResourceItem) -> some View {
+        WrappingHStack(spacing: 6, rowSpacing: 6) {
+            managerChip(
+                item.type.displayTitle(language: controller.language),
+                foreground: PanelTheme.textSecondary,
+                background: PanelTheme.field
+            )
+
+            managerChip(
+                item.group,
+                foreground: PanelTheme.warning,
+                background: PanelTheme.warning.opacity(0.12)
+            )
+
+            ForEach(cleanManagerTags(for: item).prefix(4), id: \.self) { tag in
+                managerChip(
+                    tag,
+                    foreground: PanelTheme.accent,
+                    background: PanelTheme.accent.opacity(0.10)
+                )
+            }
+        }
+    }
+
+    private func managerChip(_ title: String, foreground: Color, background: Color) -> some View {
+        Text(title)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(foreground)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(background, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+    }
+
+    private func cleanManagerTags(for item: ResourceItem) -> [String] {
+        let hiddenTags: Set<String> = [
+            "clipboard", "file", "file-url", "text", "from-clipboard", "default"
+        ]
+        var seen: Set<String> = []
+
+        return item.tags.compactMap { rawTag in
+            let tag = rawTag
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+            let key = tag.lowercased()
+
+            guard tag.count > 1,
+                  tag != "...",
+                  tag != "…",
+                  !hiddenTags.contains(key),
+                  !key.hasPrefix("ext:"),
+                  !key.hasPrefix("source:"),
+                  !seen.contains(key)
+            else {
+                return nil
+            }
+
+            seen.insert(key)
+            return tag
+        }
     }
 
     private func sidebarButton(title: String, count: Int, isSelected: Bool, action: @escaping () -> Void) -> some View {
@@ -5481,29 +5510,22 @@ private struct InstantHoverHelpModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .top) {
-                if isHovered {
-                    Text(title)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(PanelTheme.textPrimary)
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(PanelTheme.surface, in: Capsule())
-                        .overlay(Capsule().stroke(PanelTheme.border, lineWidth: 1))
-                        .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
-                        .offset(y: -30)
-                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
-                        .allowsHitTesting(false)
-                        .zIndex(30)
-                }
-            }
-            .zIndex(isHovered ? 30 : 0)
             .onHover { hovering in
-                withAnimation(.easeOut(duration: 0.12)) {
-                    isHovered = hovering
-                }
+                isHovered = hovering
+            }
+            .popover(
+                isPresented: $isHovered,
+                attachmentAnchor: .point(.top),
+                arrowEdge: .bottom
+            ) {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(PanelTheme.textPrimary)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(PanelTheme.surface)
             }
             .help(title)
     }
@@ -5512,6 +5534,60 @@ private struct InstantHoverHelpModifier: ViewModifier {
 private extension View {
     func instantHoverHelp(_ title: String) -> some View {
         modifier(InstantHoverHelpModifier(title: title))
+    }
+}
+
+private struct WrappingHStack: Layout {
+    var spacing: CGFloat = 6
+    var rowSpacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        arrangeSubviews(in: proposal.width ?? .greatestFiniteMagnitude, subviews: subviews).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let arrangement = arrangeSubviews(in: bounds.width, subviews: subviews)
+
+        for item in arrangement.items {
+            subviews[item.index].place(
+                at: CGPoint(x: bounds.minX + item.origin.x, y: bounds.minY + item.origin.y),
+                proposal: ProposedViewSize(item.size)
+            )
+        }
+    }
+
+    private func arrangeSubviews(in availableWidth: CGFloat, subviews: Subviews) -> (items: [PlacedItem], size: CGSize) {
+        let width = max(0, availableWidth.isFinite ? availableWidth : .greatestFiniteMagnitude)
+        var items: [PlacedItem] = []
+        var cursor = CGPoint.zero
+        var rowHeight: CGFloat = 0
+        var maxWidth: CGFloat = 0
+
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            let nextX = cursor.x == 0 ? size.width : cursor.x + spacing + size.width
+
+            if cursor.x > 0, nextX > width {
+                maxWidth = max(maxWidth, cursor.x)
+                cursor.x = 0
+                cursor.y += rowHeight + rowSpacing
+                rowHeight = 0
+            }
+
+            let origin = CGPoint(x: cursor.x, y: cursor.y)
+            items.append(PlacedItem(index: index, origin: origin, size: size))
+            cursor.x = cursor.x == 0 ? size.width : cursor.x + spacing + size.width
+            rowHeight = max(rowHeight, size.height)
+        }
+
+        maxWidth = max(maxWidth, cursor.x)
+        return (items, CGSize(width: min(maxWidth, width), height: cursor.y + rowHeight))
+    }
+
+    private struct PlacedItem {
+        let index: Int
+        let origin: CGPoint
+        let size: CGSize
     }
 }
 

@@ -139,20 +139,52 @@ enum ReleaseMetadataFetcher {
     static let defaultMetadataURL = URL(string: "https://xn--8ovp9s.xn--m8txu.com/DingDong/dingdong-release.json")!
     static let defaultWebsiteURL = URL(string: "https://xn--8ovp9s.xn--m8txu.com/DingDong/")!
     static let defaultReleasePageURL = URL(string: "https://github.com/JevonsCode/DingDong/releases/latest")!
+    private static let fallbackMetadataURLs = [
+        defaultMetadataURL,
+        URL(string: "https://jevonscode.github.io/DingDong/dingdong-release.json")!,
+        URL(string: "https://raw.githubusercontent.com/JevonsCode/DingDong/main/docs/dingdong-release.json")!
+    ]
 
     @discardableResult
     static func fetch(
         from url: URL = defaultMetadataURL,
         completion: @escaping @Sendable (Result<ReleaseMetadata, Error>) -> Void
     ) -> URLSessionDataTask {
-        let task = URLSession.shared.dataTask(with: url) { data, _, error in
+        let urls = url == defaultMetadataURL ? fallbackMetadataURLs : [url]
+        return fetch(from: urls, index: 0, completion: completion)
+    }
+
+    private static func fetch(
+        from urls: [URL],
+        index: Int,
+        completion: @escaping @Sendable (Result<ReleaseMetadata, Error>) -> Void
+    ) -> URLSessionDataTask {
+        let url = urls[index]
+        var request = URLRequest(
+            url: url,
+            cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
+            timeoutInterval: 15
+        )
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let task = URLSession.shared.dataTask(with: request) { data, _, error in
             if let error {
-                completion(.failure(error))
+                retryOrComplete(
+                    urls: urls,
+                    index: index,
+                    error: error,
+                    completion: completion
+                )
                 return
             }
 
             guard let data else {
-                completion(.failure(ReleaseMetadataError.emptyResponse))
+                retryOrComplete(
+                    urls: urls,
+                    index: index,
+                    error: ReleaseMetadataError.emptyResponse,
+                    completion: completion
+                )
                 return
             }
 
@@ -160,11 +192,31 @@ enum ReleaseMetadataFetcher {
                 let metadata = try JSONDecoder().decode(ReleaseMetadata.self, from: data)
                 completion(.success(metadata))
             } catch {
-                completion(.failure(error))
+                retryOrComplete(
+                    urls: urls,
+                    index: index,
+                    error: error,
+                    completion: completion
+                )
             }
         }
         task.resume()
         return task
+    }
+
+    private static func retryOrComplete(
+        urls: [URL],
+        index: Int,
+        error: Error,
+        completion: @escaping @Sendable (Result<ReleaseMetadata, Error>) -> Void
+    ) {
+        let nextIndex = index + 1
+        guard nextIndex < urls.count else {
+            completion(.failure(error))
+            return
+        }
+
+        _ = fetch(from: urls, index: nextIndex, completion: completion)
     }
 }
 
