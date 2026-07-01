@@ -1,4 +1,5 @@
 import AppKit
+import QuartzCore
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -1118,7 +1119,7 @@ struct ControlPanelView: View {
                 isImportingResources = false
                 controller.showResourceManagerWindow()
             } label: {
-                Label(text(.add), systemImage: "plus")
+                Label(controller.language == .chinese ? "资源管理" : "Manage", systemImage: "rectangle.stack")
             }
             .buttonStyle(ControlButtonStyle(isProminent: true))
         }
@@ -2174,14 +2175,7 @@ struct ControlPanelView: View {
             Text(controller.clipboardHotKeyState.displayText(language: controller.language))
                 .lineLimit(1)
 
-            Spacer()
-
-            Button {
-                controller.testDing()
-            } label: {
-                Label(text(.test), systemImage: "play.fill")
-            }
-            .buttonStyle(ControlButtonStyle())
+            Spacer(minLength: 0)
         }
         .font(.system(size: 11, weight: .medium))
         .foregroundStyle(PanelTheme.textSecondary)
@@ -4665,12 +4659,21 @@ struct SettingsPanelView: View {
                     apiLine(line.title, line.value)
                 }
 
-                Button {
-                    controller.copyCurlExample()
-                } label: {
-                    Label(text(.copyDingCurl), systemImage: "doc.on.doc")
+                HStack(spacing: 8) {
+                    Button {
+                        controller.copyCurlExample()
+                    } label: {
+                        Label(text(.copyDingCurl), systemImage: "doc.on.doc")
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button {
+                        controller.testDing()
+                    } label: {
+                        Label(text(.test), systemImage: "play.fill")
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.borderedProminent)
                 .padding(.top, 4)
             }
         }
@@ -5323,45 +5326,132 @@ private struct RowIconButtonStyle: ButtonStyle {
 
 private struct InstantHoverHelpModifier: ViewModifier {
     let title: String
-    @State private var isHovered = false
 
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .bottom) {
-                if isHovered {
-                    VStack(spacing: 0) {
-                        Triangle()
-                            .fill(PanelTheme.surface)
-                            .frame(width: 14, height: 7)
-                            .overlay {
-                                Triangle()
-                                    .stroke(PanelTheme.border, lineWidth: 1)
-                            }
-
-                        Text(title)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(PanelTheme.textPrimary)
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .padding(.horizontal, 11)
-                            .padding(.vertical, 7)
-                            .background(PanelTheme.surface, in: Capsule())
-                            .overlay(Capsule().stroke(PanelTheme.border, lineWidth: 1))
-                            .shadow(color: .black.opacity(0.14), radius: 10, y: 4)
-                    }
-                    .offset(y: 42)
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
-                    .allowsHitTesting(false)
-                    .zIndex(100)
+            .onHover { hovering in
+                if hovering {
+                    HoverTooltipWindow.shared.show(title: title)
+                } else {
+                    HoverTooltipWindow.shared.hide(title: title)
                 }
             }
-            .zIndex(isHovered ? 100 : 0)
-            .onHover { hovering in
-                withAnimation(.easeOut(duration: 0.10)) {
-                    isHovered = hovering
-                }
+            .onDisappear {
+                HoverTooltipWindow.shared.hide(title: title)
             }
             .help(title)
+    }
+}
+
+@MainActor
+private final class HoverTooltipWindow {
+    static let shared = HoverTooltipWindow()
+
+    private var panel: NSPanel?
+    private var currentTitle: String?
+
+    func show(title: String) {
+        guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+
+        currentTitle = title
+        let hostingView = NSHostingView(rootView: HoverTooltipContent(title: title))
+        let fittingSize = hostingView.fittingSize
+        let contentSize = NSSize(width: ceil(fittingSize.width), height: ceil(fittingSize.height))
+        hostingView.frame = NSRect(origin: .zero, size: contentSize)
+
+        let tooltipPanel = panel ?? makePanel(size: contentSize)
+        panel = tooltipPanel
+        tooltipPanel.contentView = hostingView
+        tooltipPanel.setContentSize(contentSize)
+        tooltipPanel.setFrameOrigin(origin(for: contentSize))
+
+        if !tooltipPanel.isVisible {
+            tooltipPanel.alphaValue = 0
+            tooltipPanel.orderFrontRegardless()
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.08
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                tooltipPanel.animator().alphaValue = 1
+            }
+        } else {
+            tooltipPanel.alphaValue = 1
+        }
+    }
+
+    func hide(title: String? = nil) {
+        guard title == nil || title == currentTitle else {
+            return
+        }
+
+        currentTitle = nil
+        panel?.orderOut(nil)
+        panel?.alphaValue = 1
+    }
+
+    private func makePanel(size: NSSize) -> NSPanel {
+        let panel = NSPanel(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = false
+        panel.ignoresMouseEvents = true
+        panel.hidesOnDeactivate = false
+        panel.level = .statusBar
+        panel.collectionBehavior = [.canJoinAllSpaces, .transient, .fullScreenAuxiliary]
+        return panel
+    }
+
+    private func origin(for size: NSSize) -> NSPoint {
+        let mouseLocation = NSEvent.mouseLocation
+        let screenFrame = NSScreen.screens
+            .first { $0.frame.contains(mouseLocation) }?
+            .visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
+        let gap: CGFloat = 12
+        var x = mouseLocation.x - size.width / 2
+        var y = mouseLocation.y - size.height - gap
+
+        if y < screenFrame.minY + gap {
+            y = mouseLocation.y + gap
+        }
+
+        x = min(max(x, screenFrame.minX + gap), screenFrame.maxX - size.width - gap)
+        y = min(max(y, screenFrame.minY + gap), screenFrame.maxY - size.height - gap)
+        return NSPoint(x: x, y: y)
+    }
+}
+
+private struct HoverTooltipContent: View {
+    let title: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Triangle()
+                .fill(PanelTheme.surface)
+                .frame(width: 14, height: 7)
+                .overlay {
+                    Triangle()
+                        .stroke(PanelTheme.border, lineWidth: 1)
+                }
+
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(PanelTheme.textPrimary)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
+                .background(PanelTheme.surface, in: Capsule())
+                .overlay(Capsule().stroke(PanelTheme.border, lineWidth: 1))
+                .shadow(color: .black.opacity(0.14), radius: 10, y: 4)
+        }
+        .padding(.horizontal, 4)
+        .padding(.bottom, 8)
     }
 }
 
