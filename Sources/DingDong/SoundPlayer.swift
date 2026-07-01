@@ -148,24 +148,9 @@ final class SoundPlayer: ObservableObject {
 
     private func randomCheerfulSound() -> DingSound {
         [
-            .joy,
-            .levelUp,
-            .taDa,
-            .bubble,
-            .coin,
-            .fanfare,
-            .arcade,
-            .bloom,
-            .sunrise,
-            .popcorn,
-            .glimmer,
-            .rocket,
-            .confetti,
-            .marimba,
-            .candy,
             .sparkle,
             .success,
             .celebrate
-        ].randomElement() ?? .joy
+        ].randomElement() ?? .sparkle
     }
 }

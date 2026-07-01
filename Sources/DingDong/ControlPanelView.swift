@@ -2227,25 +2227,7 @@ struct ControlPanelView: View {
     private var soundLab: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                ForEach([DingSound.confetti, .candy, .joy, .taDa, .fanfare], id: \.self) { sound in
-                    soundButton(sound)
-                }
-            }
-
-            HStack(spacing: 6) {
-                ForEach([DingSound.marimba, .arcade, .bloom, .sunrise, .rocket], id: \.self) { sound in
-                    soundButton(sound)
-                }
-            }
-
-            HStack(spacing: 6) {
-                ForEach([DingSound.popcorn, .glimmer, .bubble, .coin, .levelUp], id: \.self) { sound in
-                    soundButton(sound)
-                }
-            }
-
-            HStack(spacing: 6) {
-                ForEach([DingSound.sparkle, .success, .celebrate, .random, .default], id: \.self) { sound in
+                ForEach(DingSound.primaryChoices, id: \.self) { sound in
                     soundButton(sound)
                 }
             }
@@ -4262,14 +4244,8 @@ struct SettingsPanelView: View {
 
     private var soundSection: some View {
         settingsSection(title: text(.soundLab), icon: "speaker.wave.2") {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                ForEach([
-                    DingSound.confetti, .candy, .joy, .taDa,
-                    .fanfare, .marimba, .arcade, .bloom,
-                    .sunrise, .rocket, .popcorn, .glimmer,
-                    .bubble, .coin, .levelUp, .sparkle,
-                    .success, .celebrate, .random, .default
-                ], id: \.self) { sound in
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                ForEach(DingSound.primaryChoices, id: \.self) { sound in
                     soundButton(sound)
                 }
             }
@@ -4774,6 +4750,10 @@ extension ResourceType {
 }
 
 private extension DingSound {
+    static var primaryChoices: [DingSound] {
+        [.default, .success, .system, .muted]
+    }
+
     func displayTitle(language: AppLanguage) -> String {
         switch self {
         case .default:
