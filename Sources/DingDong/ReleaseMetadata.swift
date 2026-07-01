@@ -136,8 +136,8 @@ enum VersionComparator {
 }
 
 enum ReleaseMetadataFetcher {
-    static let defaultMetadataURL = URL(string: "https://jevonscode.github.io/DingDong/dingdong-release.json")!
-    static let defaultWebsiteURL = URL(string: "https://jevonscode.github.io/DingDong/")!
+    static let defaultMetadataURL = URL(string: "https://xn--8ovp9s.xn--m8txu.com/DingDong/dingdong-release.json")!
+    static let defaultWebsiteURL = URL(string: "https://xn--8ovp9s.xn--m8txu.com/DingDong/")!
     static let defaultReleasePageURL = URL(string: "https://github.com/JevonsCode/DingDong/releases/latest")!
 
     @discardableResult

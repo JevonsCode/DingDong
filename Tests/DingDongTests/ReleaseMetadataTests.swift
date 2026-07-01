@@ -18,7 +18,7 @@ struct ReleaseMetadataTests {
           "latestVersion": "0.2.0",
           "latestBuild": "7",
           "publishedAt": "2026-07-01T00:00:00Z",
-          "website": "https://jevonscode.github.io/DingDong/",
+          "website": "https://xn--8ovp9s.xn--m8txu.com/DingDong/",
           "releasePage": "https://github.com/JevonsCode/DingDong/releases/latest",
           "downloads": {
             "appleSilicon": "https://example.com/DingDong-0.2.0-apple-silicon.zip",
@@ -34,6 +34,6 @@ struct ReleaseMetadataTests {
         #expect(metadata.latestVersion == "0.2.0")
         #expect(metadata.downloads.intel?.lastPathComponent == "DingDong-0.2.0-intel.zip")
         #expect(status.isLatest == false)
-        #expect(status.websiteURL.absoluteString == "https://jevonscode.github.io/DingDong/")
+        #expect(status.websiteURL.absoluteString == "https://xn--8ovp9s.xn--m8txu.com/DingDong/")
     }
 }

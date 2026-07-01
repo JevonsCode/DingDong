@@ -4,9 +4,9 @@ DingDong is a native macOS menu bar utility for AI agent completion reminders. I
 
 It is evolving into a lightweight AI companion: one local desktop service where multiple AI agents can share prompts, skills, MCP references, local knowledge references, and clipboard records.
 
-Website: https://jevonscode.github.io/DingDong/
+Website: https://xn--8ovp9s.xn--m8txu.com/DingDong/
 
-Latest release metadata: https://jevonscode.github.io/DingDong/dingdong-release.json
+Latest release metadata: https://xn--8ovp9s.xn--m8txu.com/DingDong/dingdong-release.json
 
 ## Run
 

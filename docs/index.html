@@ -3,118 +3,353 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DingDong - menu bar companion for local agents</title>
-    <meta name="description" content="DingDong is a native macOS menu bar companion for local AI agents, shared prompts, MCP references, skills, and clipboard workflows.">
+    <title>DingDong - local hub for agents, skills, MCP, prompts, and clipboard</title>
+    <meta name="description" content="DingDong is a native macOS menu bar app for managing local AI agent resources, skills, MCP references, prompts, clipboard records, and completion notifications.">
+    <link rel="icon" href="./assets/dingdong-icon.png">
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="./">
-        <img src="./assets/dingdong-icon.png" alt="DingDong icon">
+      <a class="brand" href="./" aria-label="DingDong home">
+        <img src="./assets/dingdong-icon.png" alt="">
         <span>DingDong</span>
       </a>
-      <nav>
-        <a href="#download">Download</a>
-        <a href="#agents">Agents</a>
+
+      <nav aria-label="Primary navigation">
+        <a href="#product" data-i18n="nav.product">Product</a>
+        <a href="#mcp" data-i18n="nav.mcp">MCP</a>
+        <a href="#download" data-i18n="nav.download">Download</a>
         <a href="https://github.com/JevonsCode/DingDong">GitHub</a>
       </nav>
+
+      <div class="language-switch" aria-label="Language">
+        <button class="active" type="button" data-lang="en">EN</button>
+        <button type="button" data-lang="zh">中文</button>
+      </div>
     </header>
 
     <main>
-      <section class="hero">
+      <section class="hero" id="product">
         <div class="hero-copy">
-          <p class="eyebrow">macOS menu bar utility</p>
-          <h1>A small desktop hub for local AI agents.</h1>
-          <p class="lede">
-            DingDong keeps prompts, skills, MCP references, useful clipboard records,
-            and agent completion signals in one quiet place on your Mac.
+          <p class="eyebrow" data-i18n="hero.eyebrow">macOS menu bar companion</p>
+          <h1 data-i18n="hero.title">One quiet place for every local agent.</h1>
+          <p class="lede" data-i18n="hero.lede">
+            DingDong brings prompts, skills, MCP references, useful clipboard records, project notes, and agent finish alerts into one native Mac utility.
           </p>
           <div class="actions">
-            <a class="primary" href="https://github.com/JevonsCode/DingDong/releases/latest">Download latest</a>
-            <a class="secondary" href="#agents">Connect an agent</a>
+            <a class="primary" href="https://github.com/JevonsCode/DingDong/releases/latest" data-i18n="hero.download">Download latest</a>
+            <a class="secondary" href="#mcp" data-i18n="hero.connect">Connect Codex or Claude Code</a>
           </div>
         </div>
 
-        <div class="panel-demo" aria-label="DingDong panel preview">
-          <div class="menu-chip">
+        <div class="product-stage" aria-label="DingDong product preview">
+          <div class="menu-chip" aria-label="Unread agent notifications">
             <img src="./assets/dingdong-alert-icon.png" alt="">
             <span>3</span>
           </div>
+
           <div class="demo-window">
             <div class="demo-title">
               <img src="./assets/dingdong-icon.png" alt="">
-              <strong>DingDong</strong>
+              <div>
+                <strong>DingDong</strong>
+                <span data-i18n="demo.subtitle">Local bridge is ready</span>
+              </div>
             </div>
-            <div class="tabs">
-              <span>Today</span>
-              <span>Library</span>
-              <span class="active">Clipboard</span>
+
+            <div class="demo-tabs">
+              <span data-i18n="demo.today">Today</span>
+              <span data-i18n="demo.library">Library</span>
+              <span class="active" data-i18n="demo.clipboard">Clipboard</span>
             </div>
-            <article>
-              <b>Codex task complete</b>
-              <p>Tests passed. Release notes are ready.</p>
+
+            <article class="demo-card">
+              <span class="icon">01</span>
+              <div>
+                <b data-i18n="demo.card1.title">Codex task complete</b>
+                <p data-i18n="demo.card1.body">DingDong changed the menu bar icon and recorded the event.</p>
+              </div>
             </article>
-            <article>
-              <b>user-taste skill</b>
-              <p>Available through the DingDong MCP bridge.</p>
+            <article class="demo-card">
+              <span class="icon">02</span>
+              <div>
+                <b data-i18n="demo.card2.title">user-taste skill</b>
+                <p data-i18n="demo.card2.body">Saved once, discoverable by any connected local agent.</p>
+              </div>
             </article>
-            <article>
-              <b>codebase-memory-mcp</b>
-              <p>Saved as an MCP server reference.</p>
+            <article class="demo-card">
+              <span class="icon">03</span>
+              <div>
+                <b data-i18n="demo.card3.title">Clipboard route params</b>
+                <p data-i18n="demo.card3.body">Grouped, searchable, and pasteable with keyboard shortcuts.</p>
+              </div>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="grid" id="download">
+      <section class="principles">
         <div>
-          <h2>Download</h2>
-          <p>Unsigned development builds are published for Apple Silicon and Intel Macs.</p>
+          <p class="eyebrow" data-i18n="principles.eyebrow">Design principles</p>
+          <h2 data-i18n="principles.title">Built for repeated work, not a marketing dashboard.</h2>
         </div>
-        <div class="download-card">
-          <a href="https://github.com/JevonsCode/DingDong/releases/latest">Latest release</a>
-          <small>macOS 14 or newer</small>
-        </div>
-        <div class="download-card">
-          <a href="./dingdong-release.json">Update metadata</a>
-          <small>Used by DingDong Settings</small>
+        <div class="principle-grid">
+          <article>
+            <h3 data-i18n="principles.local.title">Local first</h3>
+            <p data-i18n="principles.local.body">The app listens on 127.0.0.1. Your library and clipboard history stay on your Mac unless you explicitly export or share them.</p>
+          </article>
+          <article>
+            <h3 data-i18n="principles.summary.title">Summary before full content</h3>
+            <p data-i18n="principles.summary.body">Agents discover lightweight summaries first. Full skills, prompts, MCP configs, and clipboard content are loaded only by id when needed.</p>
+          </article>
+          <article>
+            <h3 data-i18n="principles.quiet.title">Quiet native UI</h3>
+            <p data-i18n="principles.quiet.body">A compact macOS panel, readable spacing, keyboard-first clipboard actions, and no noisy default libraries.</p>
+          </article>
         </div>
       </section>
 
-      <section class="grid" id="agents">
-        <div>
-          <h2>Agent bridge</h2>
-          <p>Install one MCP server, then let local agents query DingDong for summaries or load full resources only when needed.</p>
+      <section class="feature-grid">
+        <article>
+          <span class="feature-kicker">01</span>
+          <h2 data-i18n="features.library.title">Unified agent library</h2>
+          <p data-i18n="features.library.body">Store prompts, skills, MCP server references, knowledge notes, memories, sessions, and handoff notes in one searchable resource library.</p>
+        </article>
+        <article>
+          <span class="feature-kicker">02</span>
+          <h2 data-i18n="features.clipboard.title">Clipboard with groups</h2>
+          <p data-i18n="features.clipboard.body">Capture text, images, links, commands, code, JSON, and path-like snippets. Archive records into custom groups for things you paste often.</p>
+        </article>
+        <article>
+          <span class="feature-kicker">03</span>
+          <h2 data-i18n="features.bridge.title">Agent bridge</h2>
+          <p data-i18n="features.bridge.body">Codex, Claude Code, Cursor, or scripts can call the same local API and MCP bridge instead of each keeping a separate copy of your workflow context.</p>
+        </article>
+        <article>
+          <span class="feature-kicker">04</span>
+          <h2 data-i18n="features.notify.title">Finish alerts</h2>
+          <p data-i18n="features.notify.body">Agents can notify you when work is complete, blocked, or needs attention. The menu bar icon shows unread state until you open the panel.</p>
+        </article>
+      </section>
+
+      <section class="mcp-section" id="mcp">
+        <div class="section-heading">
+          <p class="eyebrow" data-i18n="mcp.eyebrow">Built-in MCP bridge</p>
+          <h2 data-i18n="mcp.title">Install one MCP server, manage the rest in DingDong.</h2>
+          <p data-i18n="mcp.body">The built-in bridge exposes a small set of tools for summary-first resource discovery, safe skill loading, MCP recommendation, native MCP config installation, and finish notifications.</p>
         </div>
-        <pre><code>{
+
+        <div class="setup-card">
+          <div>
+            <h3 data-i18n="mcp.installTitle">Agent config</h3>
+            <p data-i18n="mcp.installBody">Add this MCP server to Codex or Claude Code after installing DingDong.</p>
+          </div>
+          <pre><code>{
   "mcpServers": {
     "dingdong": {
       "command": "/Applications/DingDong.app/Contents/MacOS/dingdong-mcp"
     }
   }
 }</code></pre>
+        </div>
+
+        <div class="tool-grid" aria-label="DingDong MCP tools">
+          <article><code>dingdong_bridge</code><p data-i18n="tools.bridge">Start here. Returns task-scoped summaries, recommended resources, and privacy rules.</p></article>
+          <article><code>dingdong_search_assets</code><p data-i18n="tools.search">Search prompts, skills, MCP references, notes, and other resources by query and type.</p></article>
+          <article><code>dingdong_get_asset</code><p data-i18n="tools.asset">Fetch one resource by id. Summary mode hides heavy content; full mode is explicit.</p></article>
+          <article><code>dingdong_load_skill</code><p data-i18n="tools.skill">Load a selected skill resource only after an agent decides it is relevant.</p></article>
+          <article><code>dingdong_recommend_mcp</code><p data-i18n="tools.recommend">Find MCP server references that match the current task.</p></article>
+          <article><code>dingdong_install_native_mcp</code><p data-i18n="tools.install">Dry-run or install a stored MCP reference into Codex or Claude Code config.</p></article>
+          <article><code>dingdong_notify</code><p data-i18n="tools.notify">Trigger the DingDong sound, unread badge, and menu bar notification icon.</p></article>
+        </div>
       </section>
 
-      <section class="cards">
-        <article>
-          <h3>Shared library</h3>
-          <p>Prompts, skills, MCP servers, knowledge references, and clipboard records live in one searchable local store.</p>
-        </article>
-        <article>
-          <h3>Clipboard that behaves</h3>
-          <p>Open with <kbd>⌘⇧V</kbd>, preview with space, paste with return, and keep sensitive records out of agent context by default.</p>
-        </article>
-        <article>
-          <h3>Local by default</h3>
-          <p>The app listens on <code>127.0.0.1</code>. Network access is only used for checking the public release JSON.</p>
-        </article>
+      <section class="api-band">
+        <div>
+          <p class="eyebrow" data-i18n="api.eyebrow">Loopback HTTP API</p>
+          <h2 data-i18n="api.title">Readable endpoints for agents and scripts.</h2>
+          <p data-i18n="api.body">DingDong also exposes local HTTP routes for system status, resource search, clipboard insights, task sessions, durable memories, handoff notes, and UI deep links.</p>
+        </div>
+        <div class="endpoint-list">
+          <code>/agent/manifest</code>
+          <code>/agent/bridge</code>
+          <code>/agent/prepare</code>
+          <code>/agent/workbench</code>
+          <code>/agent/resource/{id}</code>
+          <code>/clipboard/insights</code>
+          <code>/library</code>
+          <code>/ding</code>
+        </div>
+      </section>
+
+      <section class="download-section" id="download">
+        <div>
+          <p class="eyebrow" data-i18n="download.eyebrow">Download</p>
+          <h2 data-i18n="download.title">Native macOS builds.</h2>
+          <p data-i18n="download.body">Unsigned development builds are published for Apple Silicon and Intel Macs. macOS may ask you to approve the app and Accessibility permission for keyboard paste workflows.</p>
+        </div>
+        <div class="download-actions">
+          <a class="download-card" href="https://github.com/JevonsCode/DingDong/releases/latest">
+            <strong data-i18n="download.latest">Latest release</strong>
+            <span data-i18n="download.latestHint">Apple Silicon and Intel archives</span>
+          </a>
+          <a class="download-card" href="./dingdong-release.json">
+            <strong data-i18n="download.metadata">Release metadata JSON</strong>
+            <span data-i18n="download.metadataHint">Used by DingDong Settings</span>
+          </a>
+        </div>
       </section>
     </main>
 
     <footer>
       <span>DingDong</span>
-      <a href="https://github.com/JevonsCode/DingDong">Source</a>
-      <a href="https://github.com/JevonsCode/DingDong/releases/latest">Releases</a>
+      <a href="https://github.com/JevonsCode/DingDong">GitHub</a>
+      <a href="https://github.com/JevonsCode/DingDong/releases/latest" data-i18n="footer.releases">Releases</a>
+      <a href="./dingdong-release.json" data-i18n="footer.metadata">Metadata</a>
     </footer>
+
+    <script>
+      const copy = {
+        en: {
+          "nav.product": "Product",
+          "nav.mcp": "MCP",
+          "nav.download": "Download",
+          "hero.eyebrow": "macOS menu bar companion",
+          "hero.title": "One quiet place for every local agent.",
+          "hero.lede": "DingDong brings prompts, skills, MCP references, useful clipboard records, project notes, and agent finish alerts into one native Mac utility.",
+          "hero.download": "Download latest",
+          "hero.connect": "Connect Codex or Claude Code",
+          "demo.subtitle": "Local bridge is ready",
+          "demo.today": "Today",
+          "demo.library": "Library",
+          "demo.clipboard": "Clipboard",
+          "demo.card1.title": "Codex task complete",
+          "demo.card1.body": "DingDong changed the menu bar icon and recorded the event.",
+          "demo.card2.title": "user-taste skill",
+          "demo.card2.body": "Saved once, discoverable by any connected local agent.",
+          "demo.card3.title": "Clipboard route params",
+          "demo.card3.body": "Grouped, searchable, and pasteable with keyboard shortcuts.",
+          "principles.eyebrow": "Design principles",
+          "principles.title": "Built for repeated work, not a marketing dashboard.",
+          "principles.local.title": "Local first",
+          "principles.local.body": "The app listens on 127.0.0.1. Your library and clipboard history stay on your Mac unless you explicitly export or share them.",
+          "principles.summary.title": "Summary before full content",
+          "principles.summary.body": "Agents discover lightweight summaries first. Full skills, prompts, MCP configs, and clipboard content are loaded only by id when needed.",
+          "principles.quiet.title": "Quiet native UI",
+          "principles.quiet.body": "A compact macOS panel, readable spacing, keyboard-first clipboard actions, and no noisy default libraries.",
+          "features.library.title": "Unified agent library",
+          "features.library.body": "Store prompts, skills, MCP server references, knowledge notes, memories, sessions, and handoff notes in one searchable resource library.",
+          "features.clipboard.title": "Clipboard with groups",
+          "features.clipboard.body": "Capture text, images, links, commands, code, JSON, and path-like snippets. Archive records into custom groups for things you paste often.",
+          "features.bridge.title": "Agent bridge",
+          "features.bridge.body": "Codex, Claude Code, Cursor, or scripts can call the same local API and MCP bridge instead of each keeping a separate copy of your workflow context.",
+          "features.notify.title": "Finish alerts",
+          "features.notify.body": "Agents can notify you when work is complete, blocked, or needs attention. The menu bar icon shows unread state until you open the panel.",
+          "mcp.eyebrow": "Built-in MCP bridge",
+          "mcp.title": "Install one MCP server, manage the rest in DingDong.",
+          "mcp.body": "The built-in bridge exposes a small set of tools for summary-first resource discovery, safe skill loading, MCP recommendation, native MCP config installation, and finish notifications.",
+          "mcp.installTitle": "Agent config",
+          "mcp.installBody": "Add this MCP server to Codex or Claude Code after installing DingDong.",
+          "tools.bridge": "Start here. Returns task-scoped summaries, recommended resources, and privacy rules.",
+          "tools.search": "Search prompts, skills, MCP references, notes, and other resources by query and type.",
+          "tools.asset": "Fetch one resource by id. Summary mode hides heavy content; full mode is explicit.",
+          "tools.skill": "Load a selected skill resource only after an agent decides it is relevant.",
+          "tools.recommend": "Find MCP server references that match the current task.",
+          "tools.install": "Dry-run or install a stored MCP reference into Codex or Claude Code config.",
+          "tools.notify": "Trigger the DingDong sound, unread badge, and menu bar notification icon.",
+          "api.eyebrow": "Loopback HTTP API",
+          "api.title": "Readable endpoints for agents and scripts.",
+          "api.body": "DingDong also exposes local HTTP routes for system status, resource search, clipboard insights, task sessions, durable memories, handoff notes, and UI deep links.",
+          "download.eyebrow": "Download",
+          "download.title": "Native macOS builds.",
+          "download.body": "Unsigned development builds are published for Apple Silicon and Intel Macs. macOS may ask you to approve the app and Accessibility permission for keyboard paste workflows.",
+          "download.latest": "Latest release",
+          "download.latestHint": "Apple Silicon and Intel archives",
+          "download.metadata": "Release metadata JSON",
+          "download.metadataHint": "Used by DingDong Settings",
+          "footer.releases": "Releases",
+          "footer.metadata": "Metadata"
+        },
+        zh: {
+          "nav.product": "产品",
+          "nav.mcp": "MCP",
+          "nav.download": "下载",
+          "hero.eyebrow": "macOS 菜单栏工具",
+          "hero.title": "把本地 Agent 的上下文统一放好。",
+          "hero.lede": "DingDong 把提示词、Skills、MCP 引用、常用剪贴板内容、项目笔记和 Agent 完成提醒，收进一个原生 Mac 小工具里。",
+          "hero.download": "下载最新版",
+          "hero.connect": "接入 Codex 或 Claude Code",
+          "demo.subtitle": "本地桥接已就绪",
+          "demo.today": "今日",
+          "demo.library": "资源库",
+          "demo.clipboard": "剪贴板",
+          "demo.card1.title": "Codex 任务完成",
+          "demo.card1.body": "DingDong 切换菜单栏图标，并记录这次事件。",
+          "demo.card2.title": "user-taste Skill",
+          "demo.card2.body": "只保存一次，任何已接入的本地 Agent 都能发现。",
+          "demo.card3.title": "剪贴板路由参数",
+          "demo.card3.body": "可分组、可搜索，也能用键盘快捷粘贴。",
+          "principles.eyebrow": "设计理念",
+          "principles.title": "为每天重复使用设计，不做花哨看板。",
+          "principles.local.title": "本地优先",
+          "principles.local.body": "应用只监听 127.0.0.1。资源库和剪贴板历史默认留在你的 Mac 上，除非你主动导出或分享。",
+          "principles.summary.title": "先摘要，再加载全文",
+          "principles.summary.body": "Agent 先拿轻量摘要。完整 Skill、提示词、MCP 配置和剪贴板内容，只有需要时才按 id 加载。",
+          "principles.quiet.title": "安静的原生体验",
+          "principles.quiet.body": "紧凑的 macOS 面板、清楚的间距、键盘优先的剪贴板操作，不预置一堆干扰内容。",
+          "features.library.title": "统一资源库",
+          "features.library.body": "把提示词、Skills、MCP 服务器引用、知识笔记、记忆、任务会话和交接记录放进一个可搜索的本地资源库。",
+          "features.clipboard.title": "带分组的剪贴板",
+          "features.clipboard.body": "捕获文本、图片、链接、命令、代码、JSON 和路径类片段。常粘贴的内容可以归档到自定义分组。",
+          "features.bridge.title": "Agent 桥接",
+          "features.bridge.body": "Codex、Claude Code、Cursor 或脚本可以调用同一个本地 API 和 MCP 桥，不用每个 Agent 各自维护一份上下文。",
+          "features.notify.title": "完成提醒",
+          "features.notify.body": "Agent 可以在任务完成、卡住或需要你处理时提醒你。菜单栏图标会显示未读状态，打开面板后恢复。",
+          "mcp.eyebrow": "内置 MCP 桥",
+          "mcp.title": "只安装一个 MCP，其余都在 DingDong 管。",
+          "mcp.body": "内置桥提供少量明确工具：先摘要发现资源、安全加载 Skill、推荐 MCP、写入原生 MCP 配置，以及发送完成提醒。",
+          "mcp.installTitle": "Agent 配置",
+          "mcp.installBody": "安装 DingDong 后，把这个 MCP server 加到 Codex 或 Claude Code。",
+          "tools.bridge": "推荐入口。返回任务相关摘要、推荐资源和隐私规则。",
+          "tools.search": "按 query 和类型搜索提示词、Skills、MCP 引用、笔记等资源。",
+          "tools.asset": "按 id 获取一个资源。summary 模式隐藏大内容，full 模式需要明确指定。",
+          "tools.skill": "只有 Agent 判断相关后，才加载选中的 Skill 资源。",
+          "tools.recommend": "根据当前任务推荐资源库里的 MCP server 引用。",
+          "tools.install": "把存储的 MCP 引用 dry-run 或安装到 Codex / Claude Code 配置。",
+          "tools.notify": "触发 DingDong 声音、未读数字和菜单栏通知图标。",
+          "api.eyebrow": "Loopback HTTP API",
+          "api.title": "给 Agent 和脚本看的清晰端点。",
+          "api.body": "DingDong 也提供本地 HTTP 路由，用于系统状态、资源搜索、剪贴板洞察、任务会话、长期记忆、交接记录和 UI 跳转。",
+          "download.eyebrow": "下载",
+          "download.title": "原生 macOS 构建。",
+          "download.body": "当前发布 Apple Silicon 和 Intel 的未签名开发构建。macOS 可能会要求你批准应用，并为键盘粘贴流程开启辅助功能权限。",
+          "download.latest": "最新版",
+          "download.latestHint": "Apple Silicon 和 Intel 压缩包",
+          "download.metadata": "版本 JSON",
+          "download.metadataHint": "DingDong 设置页会读取它",
+          "footer.releases": "版本",
+          "footer.metadata": "元数据"
+        }
+      };
+
+      const buttons = document.querySelectorAll("[data-lang]");
+      const applyLanguage = (lang) => {
+        document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+        document.querySelectorAll("[data-i18n]").forEach((node) => {
+          const value = copy[lang][node.dataset.i18n];
+          if (value) node.textContent = value;
+        });
+        buttons.forEach((button) => button.classList.toggle("active", button.dataset.lang === lang));
+        localStorage.setItem("dingdong-site-language", lang);
+      };
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => applyLanguage(button.dataset.lang));
+      });
+
+      const preferredLanguage = localStorage.getItem("dingdong-site-language") ||
+        (navigator.language && navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en");
+      applyLanguage(preferredLanguage);
+    </script>
   </body>
 </html>
