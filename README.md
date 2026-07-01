@@ -1,5 +1,9 @@
 # DingDong
 
+<p align="center">
+  <img src="docs/assets/dingdong-icon.png" width="96" alt="DingDong icon">
+</p>
+
 DingDong is a native macOS menu bar utility for AI agent completion reminders. It exposes a loopback-only HTTP API. When an agent calls the API, the menu bar icon flashes and the app plays the built-in ding dong sound or a custom audio file selected by the user.
 
 It is evolving into a lightweight AI companion: one local desktop service where multiple AI agents can share prompts, skills, MCP references, local knowledge references, and clipboard records.

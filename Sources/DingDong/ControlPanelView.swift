@@ -512,7 +512,7 @@ struct ControlPanelView: View {
     }
 
     private var quickStartPanel: some View {
-        HStack(spacing: 8) {
+        VStack(spacing: 9) {
             TextField("", text: $launchpadTask, prompt: Text(text(.agentTaskPlaceholder)).foregroundStyle(PanelTheme.textTertiary))
                 .textFieldStyle(.plain)
                 .foregroundStyle(PanelTheme.textPrimary)
@@ -521,32 +521,34 @@ struct ControlPanelView: View {
                 .frame(height: 34)
                 .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 7))
 
-            Button {
-                controller.copyAgentPrepareCommand(task: launchpadTask)
-            } label: {
-                Label(text(.copyPrepare), systemImage: "wand.and.stars")
-                    .labelStyle(.iconOnly)
-            }
-            .instantHoverHelp(text(.copyPrepare))
-            .buttonStyle(IconButtonStyle(isProminent: true, size: 34))
+            HStack(spacing: 8) {
+                Button {
+                    controller.copyAgentPrepareCommand(task: launchpadTask)
+                } label: {
+                    Label(text(.copyPrepare), systemImage: "wand.and.stars")
+                        .frame(maxWidth: .infinity)
+                }
+                .instantHoverHelp(text(.copyPrepare))
+                .buttonStyle(ControlButtonStyle(isProminent: true))
 
-            Button {
-                controller.copyAgentWorkbenchCommand(task: launchpadTask)
-            } label: {
-                Label(text(.copyWorkbench), systemImage: "rectangle.stack.badge.play")
-                    .labelStyle(.iconOnly)
-            }
-            .instantHoverHelp(text(.copyWorkbench))
-            .buttonStyle(IconButtonStyle(size: 34))
+                Button {
+                    controller.copyAgentWorkbenchCommand(task: launchpadTask)
+                } label: {
+                    Label(text(.copyWorkbench), systemImage: "rectangle.stack.badge.play")
+                        .frame(maxWidth: .infinity)
+                }
+                .instantHoverHelp(text(.copyWorkbench))
+                .buttonStyle(ControlButtonStyle())
 
-            Button {
-                controller.copyAgentToolkitCommand()
-            } label: {
-                Label(text(.toolkit), systemImage: "wrench.and.screwdriver")
-                    .labelStyle(.iconOnly)
+                Button {
+                    controller.copyAgentToolkitCommand()
+                } label: {
+                    Label(text(.toolkit), systemImage: "wrench.and.screwdriver")
+                        .frame(maxWidth: .infinity)
+                }
+                .instantHoverHelp(text(.toolkit))
+                .buttonStyle(ControlButtonStyle())
             }
-            .instantHoverHelp(text(.toolkit))
-            .buttonStyle(IconButtonStyle(size: 34))
         }
         .padding(13)
         .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 10))
@@ -2685,13 +2687,6 @@ struct ControlPanelView: View {
 
                 if item.type == .clipboard {
                     Button {
-                        controller.restoreClipboardItem(item)
-                    } label: {
-                        Image(systemName: "arrowshape.turn.up.left")
-                    }
-                    .instantHoverHelp(text(.restoreClipboard))
-
-                    Button {
                         controller.promoteClipboardToPrompt(item)
                     } label: {
                         Image(systemName: "wand.and.sparkles")
@@ -2712,15 +2707,6 @@ struct ControlPanelView: View {
                     Image(systemName: "doc.on.doc")
                 }
                 .instantHoverHelp(text(.copyContent))
-
-                if item.type != .clipboard {
-                    Button {
-                        controller.copyResourceID(item)
-                    } label: {
-                        Image(systemName: "number")
-                    }
-                    .instantHoverHelp(text(.copyResourceID))
-                }
 
                 Button {
                     if item.type == .clipboard {
@@ -2752,6 +2738,7 @@ struct ControlPanelView: View {
         .frame(minHeight: isCompact ? 70 : 86, alignment: .center)
         .padding(.horizontal, 12)
         .padding(.vertical, isCompact ? 8 : 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(PanelTheme.border, lineWidth: 1))
     }
@@ -4826,15 +4813,28 @@ struct SettingsPanelView: View {
     }
 
     private var advancedSection: some View {
-        DisclosureGroup(isExpanded: $showsAdvancedSettings) {
-            VStack(alignment: .leading, spacing: 12) {
-                apiSection
-            }
-            .padding(.top, 8)
-        } label: {
-            Label(controller.language == .chinese ? "高级" : "Advanced", systemImage: "wrench.and.screwdriver")
-                .font(.system(size: 13, weight: .bold))
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    showsAdvancedSettings.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Label(controller.language == .chinese ? "高级" : "Advanced", systemImage: "wrench.and.screwdriver")
+                        .font(.system(size: 13, weight: .bold))
+                    Spacer()
+                    Image(systemName: showsAdvancedSettings ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 11, weight: .bold))
+                }
                 .foregroundStyle(PanelTheme.textPrimary)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if showsAdvancedSettings {
+                apiSection
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .padding(12)
         .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 8))
