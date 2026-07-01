@@ -1490,14 +1490,6 @@ struct ControlPanelView: View {
             .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 8))
 
             Button {
-                controller.captureClipboard()
-            } label: {
-                Image(systemName: "plus.square.on.square")
-            }
-            .help(text(.capture))
-            .buttonStyle(IconButtonStyle(isProminent: true, size: 34))
-
-            Button {
                 isClipboardDetailsExpanded.toggle()
             } label: {
                 ZStack {
