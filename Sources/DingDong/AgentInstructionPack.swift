@@ -10,7 +10,8 @@ struct AgentInstructionPack {
         task: String,
         type: ResourceType?,
         clipboardVisibility: AgentClipboardVisibility,
-        requestedLimit: Int?
+        requestedLimit: Int?,
+        apiEndpoint: AgentAPIEndpoint = AgentAPIEndpoint()
     ) -> [String: Any] {
         let appliedLimit = requestedLimit.map { min(max(0, $0), maxLimit) } ?? defaultLimit
         let recommendations = AgentRecommendation.object(
@@ -26,7 +27,7 @@ struct AgentInstructionPack {
         return [
             "status": "ok",
             "service": "DingDong",
-            "baseURL": "http://127.0.0.1:8765",
+            "baseURL": apiEndpoint.baseURL,
             "generatedAt": timestamp(Date()),
             "purpose": "Copyable startup instructions for local AI agents using DingDong shared resources.",
             "task": task,
@@ -46,7 +47,8 @@ struct AgentInstructionPack {
                 type: type,
                 clipboardVisibility: clipboardVisibility,
                 recommendedResources: recommendedResources,
-                activeSessions: sessions
+                activeSessions: sessions,
+                apiEndpoint: apiEndpoint
             )
         ]
     }
@@ -122,26 +124,28 @@ struct AgentInstructionPack {
         type: ResourceType?,
         clipboardVisibility: AgentClipboardVisibility,
         recommendedResources: [[String: Any]],
-        activeSessions: [ResourceItem]
+        activeSessions: [ResourceItem],
+        apiEndpoint: AgentAPIEndpoint
     ) -> String {
         let encodedTask = encoded(task)
+        let baseURL = apiEndpoint.baseURL
         var lines = [
-            "You have access to DingDong, a local macOS AI companion at http://127.0.0.1:8765.",
+            "You have access to DingDong, a local macOS AI companion at \(baseURL).",
             "Task: \(task)",
             "",
             "Before acting:",
             "1. Check active sessions:",
-            "   curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/sessions?status=active&limit=10'",
+            "   curl --noproxy 127.0.0.1 -sS '\(baseURL)/agent/sessions?status=active&limit=10'",
             "2. Register your presence:",
-            "   curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/agent/presence -H 'Content-Type: application/json' -d '{\"source\":\"Agent\",\"status\":\"active\",\"task\":\"\(escaped(task))\"}'",
+            "   curl --noproxy 127.0.0.1 -sS -X POST \(baseURL)/agent/presence -H 'Content-Type: application/json' -d '{\"source\":\"Agent\",\"status\":\"active\",\"task\":\"\(escaped(task))\"}'",
             "3. Create or update a session for multi-step work:",
-            "   curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/agent/session -H 'Content-Type: application/json' -d '{\"task\":\"\(escaped(task))\",\"source\":\"Agent\",\"status\":\"active\"}'",
+            "   curl --noproxy 127.0.0.1 -sS -X POST \(baseURL)/agent/session -H 'Content-Type: application/json' -d '{\"task\":\"\(escaped(task))\",\"source\":\"Agent\",\"status\":\"active\"}'",
             "4. Read durable memories for this task:",
-            "   curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/memories?q=\(encodedTask)&limit=10'",
+            "   curl --noproxy 127.0.0.1 -sS '\(baseURL)/agent/memories?q=\(encodedTask)&limit=10'",
             "",
             "Use shared resources:",
-            "   curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/resolve?q=\(encodedTask)\(typeQuery(type))'",
-            "   curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/context?q=\(encodedTask)&limit=12'",
+            "   curl --noproxy 127.0.0.1 -sS '\(baseURL)/agent/resolve?q=\(encodedTask)\(typeQuery(type))'",
+            "   curl --noproxy 127.0.0.1 -sS '\(baseURL)/agent/context?q=\(encodedTask)&limit=12'",
             "",
             "Clipboard privacy:",
             clipboardVisibility.includeClipboard
@@ -173,7 +177,7 @@ struct AgentInstructionPack {
         }
 
         lines.append("Only once, immediately before the final answer for the whole user-visible task, when finished, blocked, or needing user attention:")
-        lines.append("   curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/ding -H 'Content-Type: application/json' -d '{\"message\":\"Agent task complete\",\"source\":\"Agent\",\"sound\":\"random\",\"flashCount\":10}'")
+        lines.append("   curl --noproxy 127.0.0.1 -sS -X POST \(baseURL)/ding -H 'Content-Type: application/json' -d '{\"message\":\"Agent task complete\",\"source\":\"Agent\",\"sound\":\"random\",\"flashCount\":10}'")
 
         return lines.joined(separator: "\n")
     }

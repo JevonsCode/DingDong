@@ -113,7 +113,8 @@ final class NotificationServer: @unchecked Sendable {
             resourceStore: resourceStore,
             clipboardRecorder: clipboardRecorder,
             agentEventStore: agentEventStore,
-            agentPresenceStore: agentPresenceStore
+            agentPresenceStore: agentPresenceStore,
+            apiEndpoint: AgentAPIEndpoint(port: port)
         )
 
         return router.route(request)

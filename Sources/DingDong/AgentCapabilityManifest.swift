@@ -1,10 +1,10 @@
 import Foundation
 
 struct AgentCapabilityManifest {
-    static func object() -> [String: Any] {
+    static func object(apiEndpoint: AgentAPIEndpoint = AgentAPIEndpoint()) -> [String: Any] {
         [
             "service": "DingDong",
-            "baseURL": "http://127.0.0.1:8765",
+            "baseURL": apiEndpoint.baseURL,
             "transport": "loopback-http",
             "resourceTypes": ResourceType.allCases.map(\.rawValue),
             "sounds": DingSound.apiValues,

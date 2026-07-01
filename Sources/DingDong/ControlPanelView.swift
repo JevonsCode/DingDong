@@ -249,7 +249,7 @@ struct ControlPanelView: View {
     @State private var importGroup = ""
     @State private var importTags = ""
     @State private var launchpadTask = ""
-    @State private var isClipboardDetailsExpanded = true
+    @State private var isClipboardDetailsExpanded = false
     @State private var isCommandQuickSelectActive = false
     @State private var selectedClipboardDetailID: UUID?
     @State private var clipboardScrollTargetID: UUID?
@@ -481,8 +481,6 @@ struct ControlPanelView: View {
         ThinScrollableView(coordinateSpaceName: "dingdong.today-list.viewport") {
             VStack(alignment: .leading, spacing: 14) {
                 statusCard
-                quickStartPanel
-
                 HStack(spacing: 10) {
                     metricCard(text(.resources), "\(controller.resourceOverview.total)", "square.stack.3d.up")
                     metricCard(text(.clipboard), "\(controller.resourceOverview.clipboard)", "doc.on.clipboard")
@@ -502,50 +500,6 @@ struct ControlPanelView: View {
             }
             .padding(16)
         }
-    }
-
-    private var quickStartPanel: some View {
-        VStack(spacing: 9) {
-            TextField("", text: $launchpadTask, prompt: Text(text(.agentTaskPlaceholder)).foregroundStyle(PanelTheme.textTertiary))
-                .textFieldStyle(.plain)
-                .foregroundStyle(PanelTheme.textPrimary)
-                .font(.system(size: 12, weight: .medium))
-                .padding(.horizontal, 10)
-                .frame(height: 34)
-                .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 7))
-
-            HStack(spacing: 8) {
-                Button {
-                    controller.copyAgentPrepareCommand(task: launchpadTask)
-                } label: {
-                    Label(text(.copyPrepare), systemImage: "wand.and.stars")
-                        .frame(maxWidth: .infinity)
-                }
-                .instantHoverHelp(text(.copyPrepare))
-                .buttonStyle(ControlButtonStyle(isProminent: true))
-
-                Button {
-                    controller.copyAgentWorkbenchCommand(task: launchpadTask)
-                } label: {
-                    Label(text(.copyWorkbench), systemImage: "rectangle.stack.badge.play")
-                        .frame(maxWidth: .infinity)
-                }
-                .instantHoverHelp(text(.copyWorkbench))
-                .buttonStyle(ControlButtonStyle())
-
-                Button {
-                    controller.copyAgentToolkitCommand()
-                } label: {
-                    Label(text(.toolkit), systemImage: "wrench.and.screwdriver")
-                        .frame(maxWidth: .infinity)
-                }
-                .instantHoverHelp(text(.toolkit))
-                .buttonStyle(ControlButtonStyle())
-            }
-        }
-        .padding(13)
-        .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(PanelTheme.border, lineWidth: 1))
     }
 
     private var handoffInboxCard: some View {
@@ -4655,6 +4609,31 @@ struct SettingsPanelView: View {
     private var apiSection: some View {
         settingsSection(title: text(.endpoints), icon: "point.3.connected.trianglepath.dotted") {
             VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    Text(localized(
+                        "安装 DingDong MCP 后，Agent 从这里读取资源摘要、按需加载 Skill，并在任务最终结束时通知你。",
+                        "Install the DingDong MCP once. Agents read resource summaries here, load skills only when needed, and notify you when the whole task is final."
+                    ))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(PanelTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                    Spacer()
+
+                    Button {
+                        controller.showUsageGuideWindow()
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .buttonStyle(SettingsChoiceButtonStyle(isSelected: false))
+                    .frame(width: 34, height: 34)
+                    .help(localized("查看 MCP 安装说明", "View MCP setup guide"))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 9)
+                .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 8))
+
                 ForEach(apiLines, id: \.value) { line in
                     apiLine(line.title, line.value)
                 }
@@ -4895,6 +4874,10 @@ struct SettingsPanelView: View {
     private func text(_ key: AppText) -> String {
         controller.text(key)
     }
+
+    private func localized(_ chinese: String, _ english: String) -> String {
+        controller.language == .chinese ? chinese : english
+    }
 }
 
 struct UsageGuidePanelView: View {
@@ -5007,17 +4990,25 @@ struct UsageGuidePanelView: View {
                     )
                 }
 
-                guideSection(title: localized("Codex 接入", "Codex Setup"), icon: "terminal") {
+                guideSection(title: localized("MCP 接入", "MCP Setup"), icon: "terminal") {
                     guideRow(
                         title: localized("接入方式", "How it works"),
                         detail: localized(
-                            "Codex 只注册 DingDong MCP；Prompt、Skill、MCP 引用仍由 DingDong 统一管理。",
-                            "Codex only registers the DingDong MCP. Prompts, skills, and MCP references stay managed in DingDong."
+                            "Codex、Claude Code 等 Agent 只注册 DingDong MCP；Prompt、Skill、MCP 引用仍由 DingDong 统一管理。",
+                            "Codex, Claude Code, and other agents only register the DingDong MCP. Prompts, skills, and MCP references stay managed in DingDong."
                         )
                     )
                     guideRow(
-                        title: localized("MCP 配置", "MCP config"),
+                        title: localized("内置 MCP", "Bridge binary"),
+                        detail: "/Applications/DingDong.app/Contents/MacOS/dingdong-mcp"
+                    )
+                    guideRow(
+                        title: localized("Codex 配置", "Codex config"),
                         detail: "[mcp_servers.dingdong] command = \"/Applications/DingDong.app/Contents/MacOS/dingdong-mcp\""
+                    )
+                    guideRow(
+                        title: localized("Claude Code 配置", "Claude Code config"),
+                        detail: "{\"mcpServers\":{\"dingdong\":{\"command\":\"/Applications/DingDong.app/Contents/MacOS/dingdong-mcp\"}}}"
                     )
                     guideRow(
                         title: localized("任务开始", "Task start"),
@@ -5461,7 +5452,7 @@ private final class HoverTooltipWindow {
         let screenFrame = NSScreen.screens
             .first { $0.frame.intersects(anchor) || $0.frame.contains(anchor.origin) }?
             .visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
-        let gap: CGFloat = 2
+        let gap: CGFloat = 0
         var x = anchorCenterX - size.width / 2
         var y = anchorBottomY - size.height - gap
 
@@ -5479,39 +5470,16 @@ private struct HoverTooltipContent: View {
     let title: String
 
     var body: some View {
-        VStack(spacing: 0) {
-            Triangle()
-                .fill(PanelTheme.surface)
-                .frame(width: 14, height: 7)
-                .overlay {
-                    Triangle()
-                        .stroke(PanelTheme.border, lineWidth: 1)
-                }
-
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(PanelTheme.textPrimary)
-                .lineLimit(1)
-                .fixedSize(horizontal: true, vertical: false)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 7)
-                .background(PanelTheme.surface, in: Capsule())
-                .overlay(Capsule().stroke(PanelTheme.border, lineWidth: 1))
-                .shadow(color: .black.opacity(0.14), radius: 10, y: 4)
-        }
-        .padding(.horizontal, 4)
-        .padding(.bottom, 8)
-    }
-}
-
-private struct Triangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.closeSubpath()
-        return path
+        Text(title)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(PanelTheme.textPrimary)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(PanelTheme.surface.opacity(0.98), in: Capsule())
+            .overlay(Capsule().stroke(PanelTheme.border, lineWidth: 1))
+            .padding(2)
     }
 }
 

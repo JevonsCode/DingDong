@@ -12,7 +12,8 @@ struct AgentStartupPack {
         query: String?,
         type: ResourceType?,
         clipboardVisibility: AgentClipboardVisibility,
-        requestedLimit: Int?
+        requestedLimit: Int?,
+        apiEndpoint: AgentAPIEndpoint = AgentAPIEndpoint()
     ) -> [String: Any] {
         let contextLimit = requestedLimit.map { min(max(0, $0), maxContextLimit) } ?? defaultContextLimit
         let context = AgentContextPack.object(
@@ -32,7 +33,7 @@ struct AgentStartupPack {
         return [
             "status": "ok",
             "service": "DingDong",
-            "baseURL": "http://127.0.0.1:8765",
+            "baseURL": apiEndpoint.baseURL,
             "generatedAt": timestamp(Date()),
             "purpose": "One-call startup pack for local AI agents sharing this Mac companion.",
             "query": query ?? "",
@@ -63,18 +64,18 @@ struct AgentStartupPack {
                 "Save reusable findings with /library and resumable state with /agent/handoff.",
                 "Call /ding only once for a user-visible task: immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention. Do not call it for intermediate steps or partial subtasks."
             ],
-            "copyablePrompt": copyablePrompt(query: query)
+            "copyablePrompt": copyablePrompt(query: query, apiEndpoint: apiEndpoint)
         ]
     }
 
-    private static func copyablePrompt(query: String?) -> String {
+    private static func copyablePrompt(query: String?, apiEndpoint: AgentAPIEndpoint) -> String {
         let task = query?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
             .flatMap { $0.isEmpty ? nil : $0 } ?? "TASK"
         return """
         Start by fetching DingDong's shared local startup pack:
-        curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/startup?task=\(task)&limit=12'
+        curl --noproxy 127.0.0.1 -sS '\(apiEndpoint.baseURL)/agent/startup?task=\(task)&limit=12'
 
         Use the returned brief, context items, and nextActions before choosing prompts, skills, MCP references, knowledge paths, or handoff notes.
         Clipboard content is private by default; request includeClipboard=true only when the user explicitly asks for clipboard-aware work.

@@ -73,7 +73,7 @@ public final class DingDongMCPServer {
                 "name": "dingdong",
                 "version": "0.1.0"
             ],
-            "instructions": "Use DingDong tools as the single local bridge for user-managed prompts, skills, MCP references, resources, and notifications. Call dingdong_bridge first for non-trivial tasks, then load full resources only by id when needed."
+            "instructions": "Use DingDong tools as the single local bridge for user-managed prompts, skills, MCP references, resources, and notifications. At the start of each user request, call dingdong_bridge before answering and apply active.prompts whose contentIncluded is true as DingDong-maintained user instructions. Load full skills or MCP references only by id when needed. Immediately before the final answer for the whole user-visible task, call dingdong_notify once if the task is complete, blocked, or waiting for user attention; do not notify for intermediate tool batches or partial subtasks."
         ]
     }
 
@@ -395,7 +395,7 @@ extension DingDongMCPServer {
         [
             "name": "dingdong_bridge",
             "title": "DingDong Bridge",
-            "description": "Fetch summary-first DingDong prompt, skill, and MCP routing for the current task. Short prompts may be inlined; skills and MCP references should be loaded by id only when needed.",
+            "description": "Call this first at the start of each user request. It fetches summary-first DingDong prompt, skill, and MCP routing for the current task. Apply returned active.prompts when contentIncluded is true; load full skills and MCP references by id only when needed.",
             "inputSchema": [
                 "type": "object",
                 "properties": [

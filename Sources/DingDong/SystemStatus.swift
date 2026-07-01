@@ -5,19 +5,17 @@ struct SystemStatus {
         resources: [ResourceItem],
         recentEvents: [AgentEvent],
         activeAgents: [AgentPresenceRecord],
-        clipboardMonitoringEnabled: Bool
+        clipboardMonitoringEnabled: Bool,
+        apiEndpoint: AgentAPIEndpoint = AgentAPIEndpoint()
     ) -> [String: Any] {
         [
             "status": "ok",
             "service": "DingDong",
-            "baseURL": "http://127.0.0.1:8765",
+            "baseURL": apiEndpoint.baseURL,
             "generatedAt": timestamp(Date()),
-            "runtime": [
-                "transport": "loopback-http",
-                "host": "127.0.0.1",
-                "port": 8765,
+            "runtime": apiEndpoint.runtimeObject.merging([
                 "clipboardMonitoringEnabled": clipboardMonitoringEnabled
-            ],
+            ]) { current, _ in current },
             "counts": [
                 "resources": resources.count,
                 "pinnedResources": resources.filter(\.pinned).count,

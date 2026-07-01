@@ -9,7 +9,8 @@ struct AgentWorkbench {
         resources: [ResourceItem],
         activeAgents: [AgentPresenceRecord],
         task: String?,
-        requestedLimit: Int?
+        requestedLimit: Int?,
+        apiEndpoint: AgentAPIEndpoint = AgentAPIEndpoint()
     ) -> [String: Any] {
         let limit = requestedLimit.map { min(max(0, $0), maxLimit) } ?? defaultLimit
         let cleanedTask = task?
@@ -29,7 +30,7 @@ struct AgentWorkbench {
         return [
             "status": "ok",
             "service": "DingDong",
-            "baseURL": "http://127.0.0.1:8765",
+            "baseURL": apiEndpoint.baseURL,
             "generatedAt": timestamp(Date()),
             "purpose": "Lightweight workbench for local AI agents to choose resumable work, context, and next API calls.",
             "task": cleanedTask ?? "",

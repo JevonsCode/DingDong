@@ -13,7 +13,8 @@ struct AgentPreparePack {
         clipboardVisibility: AgentClipboardVisibility,
         clipboardInsightsIncludeSensitive: Bool,
         clipboardMonitoringEnabled: Bool,
-        requestedLimit: Int?
+        requestedLimit: Int?,
+        apiEndpoint: AgentAPIEndpoint = AgentAPIEndpoint()
     ) -> [String: Any] {
         let limit = requestedLimit.map { min(max(0, $0), maxLimit) } ?? defaultLimit
         let matchingResources = filtered(resources: resources, query: task, type: type)
@@ -21,7 +22,7 @@ struct AgentPreparePack {
         return [
             "status": "ok",
             "service": "DingDong",
-            "baseURL": "http://127.0.0.1:8765",
+            "baseURL": apiEndpoint.baseURL,
             "generatedAt": timestamp(Date()),
             "purpose": "One-call preparation pack for local AI agents before starting a task.",
             "task": task,
@@ -40,7 +41,8 @@ struct AgentPreparePack {
                 resources: resources,
                 recentEvents: events,
                 activeAgents: activeAgents,
-                clipboardMonitoringEnabled: clipboardMonitoringEnabled
+                clipboardMonitoringEnabled: clipboardMonitoringEnabled,
+                apiEndpoint: apiEndpoint
             ),
             "startup": AgentStartupPack.object(
                 resources: resources,
@@ -50,7 +52,8 @@ struct AgentPreparePack {
                 query: task,
                 type: type,
                 clipboardVisibility: clipboardVisibility,
-                requestedLimit: limit
+                requestedLimit: limit,
+                apiEndpoint: apiEndpoint
             ),
             "recommendations": AgentRecommendation.object(
                 resources: resources,

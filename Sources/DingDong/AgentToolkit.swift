@@ -1,10 +1,14 @@
 import Foundation
 
 struct AgentToolkit {
-    static func object(resources: [ResourceItem], libraryAvailable: Bool) -> [String: Any] {
+    static func object(
+        resources: [ResourceItem],
+        libraryAvailable: Bool,
+        apiEndpoint: AgentAPIEndpoint = AgentAPIEndpoint()
+    ) -> [String: Any] {
         [
             "service": "DingDong",
-            "baseURL": "http://127.0.0.1:8765",
+            "baseURL": apiEndpoint.baseURL,
             "generatedAt": timestamp(Date()),
             "purpose": "Paste this toolkit into local AI agent startup prompts so every agent uses the same DingDong desktop capabilities.",
             "library": [
@@ -23,7 +27,7 @@ struct AgentToolkit {
                 "sensitiveClipboardDefault": "Clipboard records tagged sensitive are excluded even when includeClipboard=true unless includeSensitiveClipboard=true.",
                 "knowledgeRule": "Knowledge indexing is on-demand and bounded; call /knowledge/index before reading saved local folders."
             ],
-            "agentPrompt": promptSnippet,
+            "agentPrompt": promptSnippet(apiEndpoint: apiEndpoint),
             "startupFlow": [
                 "Call GET /health to confirm DingDong is running.",
                 "Call GET /system/status to inspect local limits, counts, and clipboard monitor state.",
@@ -41,12 +45,13 @@ struct AgentToolkit {
                 "Call POST /ding only once for a user-visible task: immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention. Do not call it after intermediate steps, tool batches, partial subtasks, or streaming segments."
             ],
             "commonCommands": AgentCommandTemplate.defaults.map(commandObject),
-            "copyablePrompt": copyablePrompt
+            "copyablePrompt": copyablePrompt(apiEndpoint: apiEndpoint)
         ]
     }
 
-    private static let promptSnippet = """
-    You have access to DingDong, a local macOS AI companion at http://127.0.0.1:8765.
+    private static func promptSnippet(apiEndpoint: AgentAPIEndpoint) -> String {
+        """
+    You have access to DingDong, a local macOS AI companion at \(apiEndpoint.baseURL).
     Use it to share prompts, skills, MCP references, local knowledge paths, clipboard records, and handoff notes with other local agents.
     For a task-specific startup prompt, fetch /agent/instructions?task=TASK&limit=6 and follow its copyablePrompt.
     Start by fetching /agent/brief, then use /agent/context or /agent/recommend for task-specific resources.
@@ -58,41 +63,44 @@ struct AgentToolkit {
     Save reusable findings through /library and save resumable state through /agent/handoff.
     Call /ding only once for the user-visible task: immediately before your final answer, when the whole task is complete, blocked, or waiting for the user's attention. Do not call it after intermediate steps, tool batches, partial subtasks, or streaming segments.
     """
+    }
 
-    private static let copyablePrompt = """
+    private static func copyablePrompt(apiEndpoint: AgentAPIEndpoint) -> String {
+        """
     Before starting, run:
-    curl --noproxy 127.0.0.1 -sS http://127.0.0.1:8765/system/status
+    curl --noproxy 127.0.0.1 -sS \(apiEndpoint.baseURL)/system/status
 
     Then fetch task context:
-    curl --noproxy 127.0.0.1 -sS http://127.0.0.1:8765/agent/brief
+    curl --noproxy 127.0.0.1 -sS \(apiEndpoint.baseURL)/agent/brief
 
     To announce your current task, run:
-    curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/agent/presence -H 'Content-Type: application/json' -d '{"source":"Agent","status":"active","task":"Starting work"}'
+    curl --noproxy 127.0.0.1 -sS -X POST \(apiEndpoint.baseURL)/agent/presence -H 'Content-Type: application/json' -d '{"source":"Agent","status":"active","task":"Starting work"}'
 
     To fetch a task-specific copyable prompt for another local agent:
-    curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/instructions?task=TASK&limit=6'
+    curl --noproxy 127.0.0.1 -sS '\(apiEndpoint.baseURL)/agent/instructions?task=TASK&limit=6'
 
     To inspect active shared sessions:
-    curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/sessions?status=active&limit=10'
+    curl --noproxy 127.0.0.1 -sS '\(apiEndpoint.baseURL)/agent/sessions?status=active&limit=10'
 
     To create a shared session for multi-step work:
-    curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/agent/session -H 'Content-Type: application/json' -d '{"task":"TASK","summary":"Starting task context","source":"Agent","status":"active"}'
+    curl --noproxy 127.0.0.1 -sS -X POST \(apiEndpoint.baseURL)/agent/session -H 'Content-Type: application/json' -d '{"task":"TASK","summary":"Starting task context","source":"Agent","status":"active"}'
 
     To read durable agent memories:
-    curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/memories?q=TASK&limit=10'
+    curl --noproxy 127.0.0.1 -sS '\(apiEndpoint.baseURL)/agent/memories?q=TASK&limit=10'
 
     When you need shared local resources, run:
-    curl --noproxy 127.0.0.1 -sS 'http://127.0.0.1:8765/agent/context?q=TASK&limit=20'
+    curl --noproxy 127.0.0.1 -sS '\(apiEndpoint.baseURL)/agent/context?q=TASK&limit=20'
 
     To save a durable lesson for future local agents, run:
-    curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/agent/memory -H 'Content-Type: application/json' -d '{"title":"TASK lesson","content":"What future agents should remember.","task":"TASK","kind":"lesson","source":"Agent"}'
+    curl --noproxy 127.0.0.1 -sS -X POST \(apiEndpoint.baseURL)/agent/memory -H 'Content-Type: application/json' -d '{"title":"TASK lesson","content":"What future agents should remember.","task":"TASK","kind":"lesson","source":"Agent"}'
 
     To save a reusable task bundle for other local agents, run:
-    curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/agent/bundle -H 'Content-Type: application/json' -d '{"title":"TASK bundle","task":"TASK","limit":12,"source":"Agent"}'
+    curl --noproxy 127.0.0.1 -sS -X POST \(apiEndpoint.baseURL)/agent/bundle -H 'Content-Type: application/json' -d '{"title":"TASK bundle","task":"TASK","limit":12,"source":"Agent"}'
 
     Only once, immediately before the final answer for the whole user-visible task, notify the user if finished, blocked, or waiting for attention:
-    curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/ding -H 'Content-Type: application/json' -d '{"message":"Agent task complete","source":"Agent","sound":"random","flashCount":10}'
+    curl --noproxy 127.0.0.1 -sS -X POST \(apiEndpoint.baseURL)/ding -H 'Content-Type: application/json' -d '{"message":"Agent task complete","source":"Agent","sound":"random","flashCount":10}'
     """
+    }
 
     private static func commandObject(_ template: AgentCommandTemplate) -> [String: Any] {
         [

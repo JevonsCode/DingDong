@@ -143,14 +143,23 @@
           <div>
             <h3 data-i18n="mcp.installTitle">Agent config</h3>
             <p data-i18n="mcp.installBody">Add this MCP server to Codex or Claude Code after installing DingDong.</p>
+            <ol class="setup-steps">
+              <li data-i18n="mcp.step1">Install DingDong in /Applications.</li>
+              <li data-i18n="mcp.step2">Register the built-in dingdong-mcp binary in your agent MCP config.</li>
+              <li data-i18n="mcp.step3">Keep prompts, skills, and MCP references in DingDong instead of duplicating them in every agent.</li>
+            </ol>
           </div>
-          <pre><code>{
+          <div class="setup-snippets">
+            <pre><code>{
   "mcpServers": {
     "dingdong": {
       "command": "/Applications/DingDong.app/Contents/MacOS/dingdong-mcp"
     }
   }
 }</code></pre>
+            <pre><code>[mcp_servers.dingdong]
+command = "/Applications/DingDong.app/Contents/MacOS/dingdong-mcp"</code></pre>
+          </div>
         </div>
 
         <div class="tool-grid" aria-label="DingDong MCP tools">
@@ -250,6 +259,9 @@
           "mcp.body": "The built-in bridge exposes a small set of tools for summary-first resource discovery, safe skill loading, MCP recommendation, native MCP config installation, and finish notifications.",
           "mcp.installTitle": "Agent config",
           "mcp.installBody": "Add this MCP server to Codex or Claude Code after installing DingDong.",
+          "mcp.step1": "Install DingDong in /Applications.",
+          "mcp.step2": "Register the built-in dingdong-mcp binary in your agent MCP config.",
+          "mcp.step3": "Keep prompts, skills, and MCP references in DingDong instead of duplicating them in every agent.",
           "tools.bridge": "Start here. Returns task-scoped summaries, recommended resources, and privacy rules.",
           "tools.search": "Search prompts, skills, MCP references, notes, and other resources by query and type.",
           "tools.asset": "Fetch one resource by id. Summary mode hides heavy content; full mode is explicit.",
@@ -310,6 +322,9 @@
           "mcp.body": "内置桥提供少量明确工具：先摘要发现资源、安全加载 Skill、推荐 MCP、写入原生 MCP 配置，以及发送完成提醒。",
           "mcp.installTitle": "Agent 配置",
           "mcp.installBody": "安装 DingDong 后，把这个 MCP server 加到 Codex 或 Claude Code。",
+          "mcp.step1": "把 DingDong 安装到 /Applications。",
+          "mcp.step2": "在 Agent 的 MCP 配置里注册内置 dingdong-mcp 文件。",
+          "mcp.step3": "Prompt、Skill 和 MCP 引用继续放在 DingDong，不要在每个 Agent 里重复维护。",
           "tools.bridge": "推荐入口。返回任务相关摘要、推荐资源和隐私规则。",
           "tools.search": "按 query 和类型搜索提示词、Skills、MCP 引用、笔记等资源。",
           "tools.asset": "按 id 获取一个资源。summary 模式隐藏大内容，full 模式需要明确指定。",

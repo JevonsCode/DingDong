@@ -13,6 +13,8 @@ struct DingDongMCPServerTests {
         #expect(result["protocolVersion"] as? String == "2025-06-18")
         #expect(capabilities["tools"] is [String: Any])
         #expect(serverInfo["name"] as? String == "dingdong")
+        #expect((result["instructions"] as? String)?.contains("At the start of each user request, call dingdong_bridge") == true)
+        #expect((result["instructions"] as? String)?.contains("call dingdong_notify once") == true)
     }
 
     @Test func initializedNotificationDoesNotRespond() {
@@ -32,6 +34,8 @@ struct DingDongMCPServerTests {
         #expect(names.contains("dingdong_get_asset"))
         #expect(names.contains("dingdong_notify"))
         #expect(names.contains("dingdong_install_native_mcp"))
+        let bridge = try #require(tools.first { ($0["name"] as? String) == "dingdong_bridge" })
+        #expect((bridge["description"] as? String)?.contains("Call this first at the start of each user request") == true)
     }
 
     @Test func bridgeToolCallsAgentBridgeWithSummaryDefaults() throws {

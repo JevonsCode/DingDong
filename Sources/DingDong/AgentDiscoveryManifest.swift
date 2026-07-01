@@ -1,21 +1,16 @@
 import Foundation
 
 struct AgentDiscoveryManifest {
-    static func object() -> [String: Any] {
-        let capabilities = AgentCapabilityManifest.object()
+    static func object(apiEndpoint: AgentAPIEndpoint = AgentAPIEndpoint()) -> [String: Any] {
+        let capabilities = AgentCapabilityManifest.object(apiEndpoint: apiEndpoint)
         let endpoints = (capabilities["endpoints"] as? [[String: Any]]) ?? []
 
         return [
             "schemaVersion": "1.0",
             "service": "DingDong",
             "description": "Local macOS AI companion for reminders, clipboard context, shared prompts, skills, MCP references, knowledge, memories, sessions, and handoffs.",
-            "baseURL": "http://127.0.0.1:8765",
-            "transport": [
-                "type": "loopback-http",
-                "host": "127.0.0.1",
-                "port": 8765,
-                "network": "local-only"
-            ],
+            "baseURL": apiEndpoint.baseURL,
+            "transport": apiEndpoint.runtimeObject.merging(["type": "loopback-http"]) { current, _ in current },
             "entrypoints": [
                 "health": "/health",
                 "status": "/system/status",

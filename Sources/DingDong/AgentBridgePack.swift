@@ -32,7 +32,8 @@ struct AgentBridgePack {
         task: String?,
         source: String?,
         requestedLimit: Int?,
-        expansion: AgentBridgeExpansion = .defaultValue
+        expansion: AgentBridgeExpansion = .defaultValue,
+        apiEndpoint: AgentAPIEndpoint = AgentAPIEndpoint()
     ) -> [String: Any] {
         let limit = requestedLimit.map { min(max(0, $0), maxLimit) } ?? defaultLimit
         let normalizedTask = task?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
@@ -54,7 +55,7 @@ struct AgentBridgePack {
         return [
             "status": "ok",
             "service": "DingDong",
-            "baseURL": "http://127.0.0.1:8765",
+            "baseURL": apiEndpoint.baseURL,
             "generatedAt": timestamp(Date()),
             "purpose": "Dynamic agent bridge config. Keep only this bridge in agent global setup; keep prompts, skills, and MCP references in DingDong.",
             "mode": "minimal-bridge-summary",

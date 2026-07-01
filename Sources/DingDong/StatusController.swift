@@ -1954,8 +1954,10 @@ final class StatusController: NSObject, ObservableObject {
 
     private func showPanelWithAnimation(_ panel: NSPanel) {
         let shouldAnimate = !panel.isVisible || panel.alphaValue < 0.98
+        let finalOrigin = panel.frame.origin
         if shouldAnimate {
             panel.alphaValue = 0
+            panel.setFrameOrigin(NSPoint(x: finalOrigin.x, y: finalOrigin.y + 12))
         }
 
         panel.orderFrontRegardless()
@@ -1966,9 +1968,10 @@ final class StatusController: NSObject, ObservableObject {
         }
 
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.11
+            context.duration = 0.13
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 1
+            panel.animator().setFrameOrigin(finalOrigin)
         }
     }
 
@@ -1978,13 +1981,18 @@ final class StatusController: NSObject, ObservableObject {
             return
         }
 
+        let originalOrigin = panel.frame.origin
+        let hiddenOrigin = NSPoint(x: originalOrigin.x, y: originalOrigin.y + 12)
+
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.09
+            context.duration = 0.10
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
             panel.animator().alphaValue = 0
+            panel.animator().setFrameOrigin(hiddenOrigin)
         } completionHandler: { [weak panel, completion] in
             Task { @MainActor in
                 panel?.orderOut(nil)
+                panel?.setFrameOrigin(originalOrigin)
                 panel?.alphaValue = 1
                 completion?()
             }
@@ -2206,7 +2214,7 @@ final class StatusController: NSObject, ObservableObject {
         let screenFrame = buttonWindow.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
         let size = panel.frame.size
         let margin: CGFloat = 10
-        let verticalGap: CGFloat = 14
+        let verticalGap: CGFloat = 24
         let x = min(max(buttonFrame.midX - size.width / 2, screenFrame.minX + margin), screenFrame.maxX - size.width - margin)
         let y = max(screenFrame.minY + margin, buttonFrame.minY - size.height - verticalGap)
         panel.setFrameOrigin(NSPoint(x: x, y: y))

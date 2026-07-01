@@ -9,6 +9,7 @@ struct NotificationRouter {
     var clipboardRecorder: ClipboardRecorder? = nil
     var agentEventStore: AgentEventStore? = nil
     var agentPresenceStore: AgentPresenceStore? = nil
+    var apiEndpoint = AgentAPIEndpoint()
     var knowledgeIndexer = KnowledgeIndexer()
     var libraryImporter = LibraryImporter()
     var writePasteboard: (String) -> Bool = Self.writeSystemPasteboard
@@ -28,10 +29,10 @@ struct NotificationRouter {
             ])
 
         case ("GET", "/agent/capabilities"):
-            return HTTPResponse.jsonObject(AgentCapabilityManifest.object().merging(["status": "ok"]) { current, _ in current })
+            return HTTPResponse.jsonObject(AgentCapabilityManifest.object(apiEndpoint: apiEndpoint).merging(["status": "ok"]) { current, _ in current })
 
         case ("GET", "/agent/manifest"), ("GET", "/.well-known/dingdong-agent.json"):
-            return HTTPResponse.jsonObject(AgentDiscoveryManifest.object().merging(["status": "ok"]) { current, _ in current })
+            return HTTPResponse.jsonObject(AgentDiscoveryManifest.object(apiEndpoint: apiEndpoint).merging(["status": "ok"]) { current, _ in current })
 
         case ("GET", "/system/status"):
             return systemStatus()
@@ -338,7 +339,7 @@ struct NotificationRouter {
         do {
             let resources = try resourceStore?.list(type: nil, query: nil, limit: nil) ?? []
             return HTTPResponse.jsonObject(
-                AgentToolkit.object(resources: resources, libraryAvailable: resourceStore != nil)
+                AgentToolkit.object(resources: resources, libraryAvailable: resourceStore != nil, apiEndpoint: apiEndpoint)
                     .merging(["status": "ok"]) { current, _ in current }
             )
         } catch {
@@ -363,7 +364,8 @@ struct NotificationRouter {
                 resources: resources,
                 recentEvents: agentEventStore?.list(limit: AgentEventStore.maxEvents) ?? [],
                 activeAgents: agentPresenceStore?.list(limit: AgentPresenceStore.maxAgents) ?? [],
-                clipboardMonitoringEnabled: clipboardMonitoringState()
+                clipboardMonitoringEnabled: clipboardMonitoringState(),
+                apiEndpoint: apiEndpoint
             ))
         } catch {
             return .json(statusCode: 500, reason: "Internal Server Error", object: [
@@ -412,7 +414,8 @@ struct NotificationRouter {
                 query: taskQuery,
                 type: type,
                 clipboardVisibility: clipboardVisibility,
-                requestedLimit: query["limit"].flatMap(Int.init)
+                requestedLimit: query["limit"].flatMap(Int.init),
+                apiEndpoint: apiEndpoint
             ))
         } catch {
             return .json(statusCode: 500, reason: "Internal Server Error", object: [
@@ -446,7 +449,8 @@ struct NotificationRouter {
                 task: task,
                 source: source,
                 requestedLimit: query["limit"].flatMap(Int.init),
-                expansion: AgentBridgeExpansion(queryValue: query["expand"])
+                expansion: AgentBridgeExpansion(queryValue: query["expand"]),
+                apiEndpoint: apiEndpoint
             ))
         } catch {
             return .json(statusCode: 500, reason: "Internal Server Error", object: [
@@ -503,7 +507,8 @@ struct NotificationRouter {
                 clipboardVisibility: clipboardVisibility,
                 clipboardInsightsIncludeSensitive: includeSensitiveClipboardInsights,
                 clipboardMonitoringEnabled: clipboardMonitoringState(),
-                requestedLimit: query["limit"].flatMap(Int.init)
+                requestedLimit: query["limit"].flatMap(Int.init),
+                apiEndpoint: apiEndpoint
             ))
         } catch {
             return .json(statusCode: 500, reason: "Internal Server Error", object: [
@@ -551,7 +556,8 @@ struct NotificationRouter {
                 task: task,
                 type: type,
                 clipboardVisibility: clipboardVisibility,
-                requestedLimit: query["limit"].flatMap(Int.init)
+                requestedLimit: query["limit"].flatMap(Int.init),
+                apiEndpoint: apiEndpoint
             ))
         } catch {
             return .json(statusCode: 500, reason: "Internal Server Error", object: [
@@ -596,7 +602,8 @@ struct NotificationRouter {
                 resources: resources,
                 activeAgents: activeAgents,
                 task: query["task"],
-                requestedLimit: query["limit"].flatMap(Int.init)
+                requestedLimit: query["limit"].flatMap(Int.init),
+                apiEndpoint: apiEndpoint
             ))
         } catch {
             return .json(statusCode: 500, reason: "Internal Server Error", object: [
