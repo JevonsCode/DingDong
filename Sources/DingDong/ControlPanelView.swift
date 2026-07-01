@@ -14,22 +14,22 @@ enum PanelMetrics {
 
 private enum PanelTheme {
     static let panelRadius: CGFloat = 18
-    static let background = Color(red: 0.944, green: 0.940, blue: 0.925)
-    static let surface = Color(red: 0.996, green: 0.992, blue: 0.982)
-    static let surfaceSoft = Color(red: 0.972, green: 0.966, blue: 0.948)
-    static let field = Color(red: 0.925, green: 0.918, blue: 0.894)
-    static let border = Color(red: 0.48, green: 0.46, blue: 0.40).opacity(0.16)
+    static let background = Color(red: 0.934, green: 0.944, blue: 0.946)
+    static let surface = Color(red: 0.988, green: 0.989, blue: 0.986)
+    static let surfaceSoft = Color(red: 0.955, green: 0.962, blue: 0.962)
+    static let field = Color(red: 0.924, green: 0.929, blue: 0.925)
+    static let border = Color(red: 0.40, green: 0.42, blue: 0.40).opacity(0.15)
     static let textPrimary = Color(red: 0.16, green: 0.17, blue: 0.18)
     static let textSecondary = Color(red: 0.40, green: 0.40, blue: 0.39)
     static let textTertiary = Color(red: 0.58, green: 0.57, blue: 0.54)
     static let textOnAccent = Color.white
-    static let textOnWarm = Color(red: 0.36, green: 0.27, blue: 0.12)
+    static let textOnWarm = Color(red: 0.33, green: 0.28, blue: 0.20)
     static let accent = Color(red: 0.31, green: 0.41, blue: 0.58)
     static let accentSoft = Color(red: 0.890, green: 0.915, blue: 0.955)
     static let success = Color(red: 0.38, green: 0.50, blue: 0.38)
     static let successSoft = Color(red: 0.900, green: 0.935, blue: 0.890)
-    static let warning = Color(red: 0.64, green: 0.46, blue: 0.20)
-    static let warningSoft = Color(red: 0.955, green: 0.905, blue: 0.800)
+    static let warning = Color(red: 0.58, green: 0.43, blue: 0.24)
+    static let warningSoft = Color(red: 0.910, green: 0.875, blue: 0.795)
     static let danger = Color(red: 0.63, green: 0.34, blue: 0.30)
     static let dangerSoft = Color(red: 0.955, green: 0.885, blue: 0.865)
 
@@ -242,15 +242,7 @@ private struct ClipboardGroupDropDelegate: DropDelegate {
 struct ControlPanelView: View {
     @ObservedObject var controller: StatusController
     @ObservedObject var soundPlayer: SoundPlayer
-    @State private var isAddingResource = false
     @State private var isImportingResources = false
-    @State private var editingResourceID: UUID?
-    @State private var draftResourceType: ResourceType = .prompt
-    @State private var draftTitle = ""
-    @State private var draftGroup = ""
-    @State private var draftContent = ""
-    @State private var draftTags = ""
-    @State private var draftPinned = false
     @State private var importResourceType: ResourceType = .knowledge
     @State private var importPath = ""
     @State private var importGroup = ""
@@ -1097,10 +1089,6 @@ struct ControlPanelView: View {
     private var libraryView: some View {
         VStack(spacing: 12) {
             libraryToolbar
-            if isAddingResource {
-                addResourcePanel
-                    .padding(.horizontal, 16)
-            }
             if isImportingResources {
                 importResourcePanel
                     .padding(.horizontal, 16)
@@ -1127,125 +1115,14 @@ struct ControlPanelView: View {
             Spacer()
 
             Button {
-                if isAddingResource {
-                    resetResourceDraft()
-                    isAddingResource = false
-                } else {
-                    editingResourceID = nil
-                    isImportingResources = false
-                    isAddingResource = true
-                }
+                isImportingResources = false
+                controller.showResourceManagerWindow()
             } label: {
-                Label(isAddingResource ? text(.close) : text(.add), systemImage: isAddingResource ? "xmark" : "plus")
+                Label(text(.add), systemImage: "plus")
             }
             .buttonStyle(ControlButtonStyle(isProminent: true))
         }
         .padding(.horizontal, 16)
-    }
-
-    private var addResourcePanel: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(editingResourceID == nil ? text(.addResource) : text(.editResource))
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(PanelTheme.textSecondary)
-
-            HStack(spacing: 6) {
-                ForEach([ResourceType.prompt, .skill, .mcp, .knowledge], id: \.self) { type in
-                    Button {
-                        draftResourceType = type
-                        if draftGroup.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            draftGroup = type.defaultGroup
-                        }
-                    } label: {
-                        Label(type.displayTitle(language: controller.language), systemImage: icon(for: type))
-                            .labelStyle(.titleAndIcon)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.72)
-                    }
-                    .buttonStyle(FilterButtonStyle(isSelected: draftResourceType == type))
-                }
-            }
-
-            HStack(spacing: 8) {
-                TextField(text(.title), text: $draftTitle)
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(PanelTheme.textPrimary)
-                    .font(.system(size: 12, weight: .medium))
-                    .padding(.horizontal, 10)
-                    .frame(height: 34)
-                    .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 7))
-
-                TextField(text(.group), text: $draftGroup)
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(PanelTheme.textPrimary)
-                    .font(.system(size: 12, weight: .medium))
-                    .frame(width: 128)
-                    .padding(.horizontal, 10)
-                    .frame(height: 34)
-                    .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 7))
-            }
-
-            TextEditor(text: $draftContent)
-                .font(.system(size: 12))
-                .foregroundStyle(PanelTheme.textPrimary)
-                .scrollContentBackground(.hidden)
-                .frame(height: 78)
-                .padding(6)
-                .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 7))
-
-            HStack(spacing: 8) {
-                TextField(text(.tagsPlaceholder), text: $draftTags)
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(PanelTheme.textPrimary)
-                    .font(.system(size: 12, weight: .medium))
-                    .padding(.horizontal, 10)
-                    .frame(height: 34)
-                    .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 7))
-
-                Toggle(text(.pin), isOn: $draftPinned)
-                    .toggleStyle(.checkbox)
-                    .frame(width: 64)
-
-                Button {
-                    let didSave = if let editingResourceID {
-                        controller.updateResource(
-                            id: editingResourceID,
-                            type: draftResourceType,
-                            title: draftTitle,
-                            content: draftContent,
-                            group: draftGroup,
-                            tagsText: draftTags,
-                            pinned: draftPinned
-                        )
-                    } else {
-                        controller.addResource(
-                            type: draftResourceType,
-                            title: draftTitle,
-                            content: draftContent,
-                            group: draftGroup,
-                            tagsText: draftTags,
-                            pinned: draftPinned
-                        )
-                    }
-
-                    if didSave {
-                        resetResourceDraft()
-                        isAddingResource = false
-                    }
-                } label: {
-                    Label(editingResourceID == nil ? text(.save) : text(.update), systemImage: "tray.and.arrow.down.fill")
-                }
-                .buttonStyle(ControlButtonStyle(isProminent: true))
-            }
-        }
-        .padding(12)
-        .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(PanelTheme.border, lineWidth: 1))
-        .onAppear {
-            if draftGroup.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                draftGroup = draftResourceType.defaultGroup
-            }
-        }
     }
 
     private var importResourcePanel: some View {
@@ -2709,13 +2586,7 @@ struct ControlPanelView: View {
                 .instantHoverHelp(text(.copyContent))
 
                 Button {
-                    if item.type == .clipboard {
-                        populateResourceDraft(item)
-                        controller.setActiveTab(.library)
-                        isAddingResource = true
-                    } else {
-                        controller.showResourceManagerWindow(editing: item)
-                    }
+                    controller.showResourceManagerWindow(editing: item)
                 } label: {
                     Image(systemName: "pencil")
                 }
@@ -2723,10 +2594,6 @@ struct ControlPanelView: View {
 
                 Button {
                     controller.deleteResource(item)
-                    if editingResourceID == item.id {
-                        resetResourceDraft()
-                        isAddingResource = false
-                    }
                 } label: {
                     Image(systemName: "trash")
                 }
@@ -3321,31 +3188,11 @@ struct ControlPanelView: View {
         }
     }
 
-    private func resetResourceDraft() {
-        editingResourceID = nil
-        draftResourceType = .prompt
-        draftTitle = ""
-        draftGroup = ResourceType.prompt.defaultGroup
-        draftContent = ""
-        draftTags = ""
-        draftPinned = false
-    }
-
     private func resetImportDraft() {
         importResourceType = .knowledge
         importPath = ""
         importGroup = ResourceType.knowledge.defaultGroup
         importTags = ""
-    }
-
-    private func populateResourceDraft(_ item: ResourceItem) {
-        editingResourceID = item.id
-        draftResourceType = item.type
-        draftTitle = item.title
-        draftGroup = item.group
-        draftContent = item.content
-        draftTags = item.tags.joined(separator: ", ")
-        draftPinned = item.pinned
     }
 }
 
@@ -4466,7 +4313,6 @@ struct SettingsPanelView: View {
     @ObservedObject var controller: StatusController
     @ObservedObject var soundPlayer: SoundPlayer
     @State private var usageSnapshot = SystemUsageSnapshot.current()
-    @State private var showsAdvancedSettings = false
 
     var body: some View {
         ScrollView {
@@ -4479,7 +4325,7 @@ struct SettingsPanelView: View {
                 appearanceSection
                 clipboardSection
                 soundSection
-                advancedSection
+                apiSection
             }
             .padding(18)
         }
@@ -4810,35 +4656,6 @@ struct SettingsPanelView: View {
                 Spacer()
             }
         }
-    }
-
-    private var advancedSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.16)) {
-                    showsAdvancedSettings.toggle()
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Label(controller.language == .chinese ? "高级" : "Advanced", systemImage: "wrench.and.screwdriver")
-                        .font(.system(size: 13, weight: .bold))
-                    Spacer()
-                    Image(systemName: showsAdvancedSettings ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 11, weight: .bold))
-                }
-                .foregroundStyle(PanelTheme.textPrimary)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if showsAdvancedSettings {
-                apiSection
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-        .padding(12)
-        .background(PanelTheme.surface, in: RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(PanelTheme.border, lineWidth: 1))
     }
 
     private var apiSection: some View {
@@ -5510,24 +5327,52 @@ private struct InstantHoverHelpModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onHover { hovering in
-                isHovered = hovering
+            .overlay(alignment: .bottom) {
+                if isHovered {
+                    VStack(spacing: 0) {
+                        Triangle()
+                            .fill(PanelTheme.surface)
+                            .frame(width: 14, height: 7)
+                            .overlay {
+                                Triangle()
+                                    .stroke(PanelTheme.border, lineWidth: 1)
+                            }
+
+                        Text(title)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(PanelTheme.textPrimary)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .padding(.horizontal, 11)
+                            .padding(.vertical, 7)
+                            .background(PanelTheme.surface, in: Capsule())
+                            .overlay(Capsule().stroke(PanelTheme.border, lineWidth: 1))
+                            .shadow(color: .black.opacity(0.14), radius: 10, y: 4)
+                    }
+                    .offset(y: 42)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    .allowsHitTesting(false)
+                    .zIndex(100)
+                }
             }
-            .popover(
-                isPresented: $isHovered,
-                attachmentAnchor: .point(.top),
-                arrowEdge: .bottom
-            ) {
-                Text(title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(PanelTheme.textPrimary)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(PanelTheme.surface)
+            .zIndex(isHovered ? 100 : 0)
+            .onHover { hovering in
+                withAnimation(.easeOut(duration: 0.10)) {
+                    isHovered = hovering
+                }
             }
             .help(title)
+    }
+}
+
+private struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }
 
@@ -5565,18 +5410,21 @@ private struct WrappingHStack: Layout {
 
         for index in subviews.indices {
             let size = subviews[index].sizeThatFits(.unspecified)
-            let nextX = cursor.x == 0 ? size.width : cursor.x + spacing + size.width
+            var originX = cursor.x == 0 ? 0 : cursor.x + spacing
+            var nextX = originX + size.width
 
             if cursor.x > 0, nextX > width {
                 maxWidth = max(maxWidth, cursor.x)
                 cursor.x = 0
                 cursor.y += rowHeight + rowSpacing
                 rowHeight = 0
+                originX = 0
+                nextX = size.width
             }
 
-            let origin = CGPoint(x: cursor.x, y: cursor.y)
+            let origin = CGPoint(x: originX, y: cursor.y)
             items.append(PlacedItem(index: index, origin: origin, size: size))
-            cursor.x = cursor.x == 0 ? size.width : cursor.x + spacing + size.width
+            cursor.x = nextX
             rowHeight = max(rowHeight, size.height)
         }
 

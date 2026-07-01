@@ -3,6 +3,7 @@ import ApplicationServices
 import Carbon.HIToolbox
 import Combine
 import Darwin
+import QuartzCore
 import SwiftUI
 
 enum ServerState: Equatable {
@@ -1573,7 +1574,7 @@ final class StatusController: NSObject, ObservableObject {
         let hidesOnDeactivateAfterActivation = activatesApp
         panel.hidesOnDeactivate = false
         positionFloatingPanel(panel, below: button)
-        panel.orderFrontRegardless()
+        showPanelWithAnimation(panel)
         if clipboardDetailWindow?.isVisible == true {
             positionClipboardDetailPanel()
         }
@@ -1943,10 +1944,50 @@ final class StatusController: NSObject, ObservableObject {
     private func pasteRestoredClipboardToTargetApplication() {
         let targetApplication = quickPasteTargetApplication
         hideClipboardDetail()
-        panelWindow?.orderOut(nil)
         stopQuickPasteHotKeys()
-        restoreFocusToTargetApplication(targetApplication) {
-            Self.postPasteShortcut()
+        hidePanelWithAnimation(panelWindow) { [weak self] in
+            self?.restoreFocusToTargetApplication(targetApplication) {
+                Self.postPasteShortcut()
+            }
+        }
+    }
+
+    private func showPanelWithAnimation(_ panel: NSPanel) {
+        let shouldAnimate = !panel.isVisible || panel.alphaValue < 0.98
+        if shouldAnimate {
+            panel.alphaValue = 0
+        }
+
+        panel.orderFrontRegardless()
+
+        guard shouldAnimate else {
+            panel.alphaValue = 1
+            return
+        }
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.11
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1
+        }
+    }
+
+    private func hidePanelWithAnimation(_ panel: NSPanel?, completion: (@MainActor @Sendable () -> Void)? = nil) {
+        guard let panel, panel.isVisible else {
+            completion?()
+            return
+        }
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.09
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            panel.animator().alphaValue = 0
+        } completionHandler: { [weak panel, completion] in
+            Task { @MainActor in
+                panel?.orderOut(nil)
+                panel?.alphaValue = 1
+                completion?()
+            }
         }
     }
 
@@ -2087,10 +2128,12 @@ final class StatusController: NSObject, ObservableObject {
         let targetApplication = restoresFocus ? quickPasteTargetApplication : nil
         stopQuickPasteHotKeys()
         hideClipboardDetail()
-        panelWindow?.orderOut(nil)
+        hidePanelWithAnimation(panelWindow) { [weak self] in
+            guard restoresFocus else {
+                return
+            }
 
-        if restoresFocus {
-            restoreFocusToTargetApplication(targetApplication)
+            self?.restoreFocusToTargetApplication(targetApplication)
         }
     }
 
