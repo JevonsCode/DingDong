@@ -283,6 +283,7 @@ final class StatusController: NSObject, ObservableObject {
     @Published private(set) var panelDensity: PanelDensity = .comfortable
     @Published private(set) var defaultPanelTab: CompanionTab = .today
     @Published private(set) var releaseStatus = ReleaseStatus.currentOnly
+    @Published private(set) var resourceManagerEditingResourceID: UUID?
     @Published var searchText = ""
 
     var isQuickPasteSessionActive: Bool {
@@ -1551,6 +1552,10 @@ final class StatusController: NSObject, ObservableObject {
         setStatusContent(isHot: false)
     }
 
+    func hideCurrentPanel() {
+        hidePopover(restoresFocus: isQuickPasteSessionActive)
+    }
+
     func showPopover(activatesApp: Bool = true) {
         guard let button = statusItem?.button else {
             return
@@ -1682,7 +1687,14 @@ final class StatusController: NSObject, ObservableObject {
         usageGuideWindow = window
     }
 
-    func showResourceManagerWindow() {
+    func showResourceManagerWindow(editing item: ResourceItem? = nil) {
+        if let item {
+            if resourceManagerEditingResourceID == item.id {
+                resourceManagerEditingResourceID = nil
+            }
+            resourceManagerEditingResourceID = item.id
+        }
+
         if let resourceManagerWindow {
             resourceManagerWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
@@ -1692,7 +1704,7 @@ final class StatusController: NSObject, ObservableObject {
         let hostingController = makeResourceManagerHostingController()
         let window = NSWindow(contentViewController: hostingController)
         window.title = language == .chinese ? "资源管理" : "Resource Manager"
-        window.setContentSize(NSSize(width: 860, height: 640))
+        window.setContentSize(NSSize(width: 1060, height: 720))
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.titlebarAppearsTransparent = false
         window.isMovableByWindowBackground = false

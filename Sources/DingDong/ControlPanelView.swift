@@ -396,11 +396,11 @@ struct ControlPanelView: View {
             .buttonStyle(IconButtonStyle(size: 32))
 
             Button {
-                controller.quit()
+                controller.hideCurrentPanel()
             } label: {
-                Image(systemName: "power")
+                Image(systemName: "rectangle.compress.vertical")
             }
-            .help(text(.quit))
+            .help(controller.language == .chinese ? "收起面板" : "Hide Panel")
             .buttonStyle(IconButtonStyle(size: 32))
         }
         .padding(.horizontal, 18)
@@ -2731,9 +2731,13 @@ struct ControlPanelView: View {
                 }
 
                 Button {
-                    populateResourceDraft(item)
-                    controller.setActiveTab(.library)
-                    isAddingResource = true
+                    if item.type == .clipboard {
+                        populateResourceDraft(item)
+                        controller.setActiveTab(.library)
+                        isAddingResource = true
+                    } else {
+                        controller.showResourceManagerWindow(editing: item)
+                    }
                 } label: {
                     Image(systemName: "pencil")
                 }
@@ -3919,6 +3923,13 @@ struct ResourceManagerWindowView: View {
     @State private var query = ""
     @State private var selectedType: ResourceType?
     @State private var selectedGroup: String?
+    @State private var editingResourceID: UUID?
+    @State private var draftType: ResourceType = .prompt
+    @State private var draftTitle = ""
+    @State private var draftContent = ""
+    @State private var draftGroup = ResourceType.prompt.defaultGroup
+    @State private var draftTags = ""
+    @State private var draftPinned = false
 
     private var managedTypes: [ResourceType] {
         [.prompt, .skill, .mcp, .knowledge]
@@ -3975,11 +3986,15 @@ struct ResourceManagerWindowView: View {
             Divider()
             content
         }
-        .frame(minWidth: 760, minHeight: 560)
+        .frame(minWidth: 960, minHeight: 640)
         .foregroundStyle(PanelTheme.textPrimary)
         .background(PanelTheme.background)
         .onAppear {
             controller.refreshResources()
+            syncEditingTarget()
+        }
+        .onChange(of: controller.resourceManagerEditingResourceID) { _, _ in
+            syncEditingTarget()
         }
     }
 
@@ -4036,10 +4051,9 @@ struct ResourceManagerWindowView: View {
             Spacer()
 
             Button {
-                controller.setActiveTab(.library)
-                controller.showWindow(tab: .library)
+                startCreatingResource()
             } label: {
-                Label(localized("在面板中新增", "Add in Panel"), systemImage: "plus")
+                Label(localized("新增资源", "New Resource"), systemImage: "plus")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(SettingsChoiceButtonStyle(isSelected: true))
@@ -4050,29 +4064,21 @@ struct ResourceManagerWindowView: View {
     }
 
     private var content: some View {
-        VStack(spacing: 14) {
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(PanelTheme.textSecondary)
-                TextField("", text: $query, prompt: Text(localized("搜索资源", "Search resources")).foregroundStyle(PanelTheme.textTertiary))
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 13, weight: .medium))
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .opacity(query.isEmpty ? 0 : 1)
-                }
-                .buttonStyle(.plain)
-                .disabled(query.isEmpty)
-            }
-            .padding(.horizontal, 12)
-            .frame(height: 38)
-            .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 8))
-            .padding(.horizontal, 18)
-            .padding(.top, 18)
+        HStack(spacing: 0) {
+            listPane
 
-            HStack {
+            Divider()
+
+            editorPane
+                .frame(width: 400)
+        }
+    }
+
+    private var listPane: some View {
+        VStack(spacing: 14) {
+            searchField
+
+            HStack(spacing: 8) {
                 Text(localized("\(filteredResources.count) 个资源", "\(filteredResources.count) resources"))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(PanelTheme.textSecondary)
@@ -4100,6 +4106,148 @@ struct ResourceManagerWindowView: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 18)
             }
+        }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(PanelTheme.textSecondary)
+            TextField("", text: $query, prompt: Text(localized("搜索资源", "Search resources")).foregroundStyle(PanelTheme.textTertiary))
+                .textFieldStyle(.plain)
+                .font(.system(size: 13, weight: .medium))
+            Button {
+                query = ""
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .opacity(query.isEmpty ? 0 : 1)
+            }
+            .buttonStyle(.plain)
+            .disabled(query.isEmpty)
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 38)
+        .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 8))
+        .padding(.horizontal, 18)
+        .padding(.top, 18)
+    }
+
+    private var editorPane: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(editingResourceID == nil ? localized("新增资源", "New Resource") : localized("编辑资源", "Edit Resource"))
+                        .font(.system(size: 18, weight: .bold))
+                    Text(localized("用于 Agent 复用的 Prompt、Skill、MCP 或知识路径", "Reusable prompts, skills, MCP references, or knowledge paths"))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(PanelTheme.textSecondary)
+                }
+
+                Spacer()
+
+                Button {
+                    clearDraft()
+                } label: {
+                    Image(systemName: "xmark")
+                }
+                .help(localized("清空", "Clear"))
+                .buttonStyle(ControlButtonStyle())
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(localized("类型", "Type"))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(PanelTheme.textSecondary)
+
+                HStack(spacing: 6) {
+                    ForEach(managedTypes, id: \.self) { type in
+                        Button {
+                            draftType = type
+                            if draftGroup.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                || managedTypes.map(\.defaultGroup).contains(draftGroup) {
+                                draftGroup = type.defaultGroup
+                            }
+                        } label: {
+                            Text(type.displayTitle(language: controller.language))
+                                .font(.system(size: 11, weight: .bold))
+                                .lineLimit(1)
+                        }
+                        .buttonStyle(FilterButtonStyle(isSelected: draftType == type))
+                    }
+                }
+            }
+
+            editorField(title: localized("标题", "Title")) {
+                TextField("", text: $draftTitle, prompt: Text(localized("给资源一个清楚的名字", "Give this resource a clear name")).foregroundStyle(PanelTheme.textTertiary))
+                    .textFieldStyle(.plain)
+            }
+
+            editorField(title: localized("分组", "Group")) {
+                TextField("", text: $draftGroup, prompt: Text(draftType.defaultGroup).foregroundStyle(PanelTheme.textTertiary))
+                    .textFieldStyle(.plain)
+            }
+
+            editorField(title: localized("标签", "Tags")) {
+                TextField("", text: $draftTags, prompt: Text(localized("用逗号分隔", "Separate with commas")).foregroundStyle(PanelTheme.textTertiary))
+                    .textFieldStyle(.plain)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(localized("内容", "Content"))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(PanelTheme.textSecondary)
+
+                TextEditor(text: $draftContent)
+                    .font(.system(.body, design: .monospaced, weight: .medium))
+                    .scrollContentBackground(.hidden)
+                    .padding(8)
+                    .frame(minHeight: 220)
+                    .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(PanelTheme.border, lineWidth: 1))
+            }
+
+            Toggle(isOn: $draftPinned) {
+                Text(localized("置顶", "Pinned"))
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            .toggleStyle(.switch)
+
+            Spacer()
+
+            HStack(spacing: 8) {
+                Button {
+                    clearDraft()
+                } label: {
+                    Text(localized("取消", "Cancel"))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(SettingsChoiceButtonStyle(isSelected: false))
+
+                Button {
+                    saveDraft()
+                } label: {
+                    Text(editingResourceID == nil ? localized("保存", "Save") : localized("更新", "Update"))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(SettingsChoiceButtonStyle(isSelected: true))
+            }
+        }
+        .padding(18)
+        .background(PanelTheme.surface.opacity(0.48))
+    }
+
+    private func editorField<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(PanelTheme.textSecondary)
+
+            content()
+                .font(.system(size: 13, weight: .medium))
+                .padding(.horizontal, 10)
+                .frame(height: 36)
+                .background(PanelTheme.field, in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(PanelTheme.border, lineWidth: 1))
         }
     }
 
@@ -4177,13 +4325,11 @@ struct ResourceManagerWindowView: View {
                 .help(localized("复制内容", "Copy content"))
 
                 Button {
-                    controller.searchText = item.title
-                    controller.setActiveTab(.library)
-                    controller.showWindow(tab: .library)
+                    populateDraft(with: item)
                 } label: {
-                    Image(systemName: "arrow.up.forward.app")
+                    Image(systemName: "pencil")
                 }
-                .help(localized("在面板中查看", "Open in panel"))
+                .help(localized("编辑", "Edit"))
 
                 Button {
                     controller.deleteResource(item)
@@ -4234,6 +4380,77 @@ struct ResourceManagerWindowView: View {
 
     private func localized(_ chinese: String, _ english: String) -> String {
         controller.language == .chinese ? chinese : english
+    }
+
+    private func syncEditingTarget() {
+        guard let id = controller.resourceManagerEditingResourceID,
+              let item = managedResources.first(where: { $0.id == id })
+        else {
+            return
+        }
+
+        populateDraft(with: item)
+    }
+
+    private func startCreatingResource() {
+        editingResourceID = nil
+        draftType = selectedType ?? .prompt
+        draftTitle = ""
+        draftContent = ""
+        draftGroup = selectedGroup ?? draftType.defaultGroup
+        draftTags = ""
+        draftPinned = false
+    }
+
+    private func populateDraft(with item: ResourceItem) {
+        editingResourceID = item.id
+        draftType = item.type
+        draftTitle = item.title
+        draftContent = item.content
+        draftGroup = item.group
+        draftTags = item.tags.joined(separator: ", ")
+        draftPinned = item.pinned
+    }
+
+    private func clearDraft() {
+        editingResourceID = nil
+        draftType = selectedType ?? .prompt
+        draftTitle = ""
+        draftContent = ""
+        draftGroup = selectedGroup ?? draftType.defaultGroup
+        draftTags = ""
+        draftPinned = false
+    }
+
+    private func saveDraft() {
+        let didSave: Bool
+        if let editingResourceID {
+            didSave = controller.updateResource(
+                id: editingResourceID,
+                type: draftType,
+                title: draftTitle,
+                content: draftContent,
+                group: draftGroup,
+                tagsText: draftTags,
+                pinned: draftPinned
+            )
+        } else {
+            didSave = controller.addResource(
+                type: draftType,
+                title: draftTitle,
+                content: draftContent,
+                group: draftGroup,
+                tagsText: draftTags,
+                pinned: draftPinned
+            )
+        }
+
+        if didSave {
+            selectedType = draftType
+            selectedGroup = nil
+            query = draftTitle
+            clearDraft()
+        }
     }
 }
 
