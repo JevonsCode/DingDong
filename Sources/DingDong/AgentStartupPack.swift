@@ -61,7 +61,7 @@ struct AgentStartupPack {
                 "Use /knowledge/index before reading saved local knowledge folders.",
                 "Use /agent/bundle to save a reusable bundle of the resources that mattered for this task.",
                 "Save reusable findings with /library and resumable state with /agent/handoff.",
-                "Call /ding when the task is complete, blocked, or needs user attention."
+                "Call /ding only once for a user-visible task: immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention. Do not call it for intermediate steps or partial subtasks."
             ],
             "copyablePrompt": copyablePrompt(query: query)
         ]

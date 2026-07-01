@@ -517,7 +517,7 @@ extension DingDongMCPServer {
         [
             "name": "dingdong_notify",
             "title": "Notify DingDong",
-            "description": "Notify DingDong when work is complete, blocked, or needs user attention.",
+            "description": "Notify DingDong only once per user-visible task, immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention. Do not notify after intermediate steps, tool batches, partial subtasks, or streaming segments.",
             "inputSchema": [
                 "type": "object",
                 "properties": [

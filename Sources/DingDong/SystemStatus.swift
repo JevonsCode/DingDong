@@ -47,7 +47,7 @@ struct SystemStatus {
                 "Call /system/status before large imports or knowledge indexing.",
                 "Use /agent/startup for one-call task context.",
                 "Use /clipboard/history or /clipboard/snippets before requesting clipboard content.",
-                "Call /ding when work is complete, blocked, or needs user attention."
+                "Call /ding only once for a user-visible task: immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention. Do not call it for intermediate steps or partial subtasks."
             ]
         ]
     }

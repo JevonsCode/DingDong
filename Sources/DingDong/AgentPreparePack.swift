@@ -106,7 +106,7 @@ struct AgentPreparePack {
             "Use /agent/context?q=\(encodedTask)&limit=12 for bounded excerpts if more context is needed.",
             "Save durable findings with /agent/bundle or /library.",
             "Leave resumable state with /agent/handoff.",
-            "Call /ding when the task is complete, blocked, or needs user attention."
+            "Call /ding only once for a user-visible task: immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention. Do not call it for intermediate steps or partial subtasks."
         ]
     }
 

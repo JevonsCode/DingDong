@@ -5000,7 +5000,10 @@ struct UsageGuidePanelView: View {
                     )
                     guideRow(
                         title: "/ding",
-                        detail: localized("Agent 完成、阻塞或需要你查看时调用。", "Agents call this when done, blocked, or needing attention.")
+                        detail: localized(
+                            "Agent 只在整项用户任务最终完成、阻塞或等待你决策时调用一次，不用于阶段结束。",
+                            "Agents call this once only when the whole user-visible task is final, blocked, or waiting for your decision, not after intermediate steps."
+                        )
                     )
                 }
 

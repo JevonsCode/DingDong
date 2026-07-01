@@ -39,7 +39,7 @@ struct AgentContextPack {
                 "Use pinned resources first.",
                 "Use /library with type and q filters when a full resource body is needed.",
                 "Use /knowledge/index with a knowledge resource id before reading local project folders.",
-                "Call /ding when the task is done, blocked, or needs user attention."
+                "Call /ding only once for a user-visible task: immediately before the final answer, when the whole task is done, blocked, or waiting for user attention. Do not call it for intermediate steps or partial subtasks."
             ],
             "items": returnedResources.map(resourceObject)
         ]

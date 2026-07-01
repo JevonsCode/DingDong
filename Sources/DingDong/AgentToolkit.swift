@@ -38,7 +38,7 @@ struct AgentToolkit {
                 "Call POST /agent/bundle to save a reusable task bundle for future local agents.",
                 "Call POST /agent/memory when you learn a durable preference, rule, or lesson that future agents should reuse.",
                 "Call POST /agent/handoff before handing work to another local agent.",
-                "Call POST /ding when work is complete, blocked, or needs user attention."
+                "Call POST /ding only once for a user-visible task: immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention. Do not call it after intermediate steps, tool batches, partial subtasks, or streaming segments."
             ],
             "commonCommands": AgentCommandTemplate.defaults.map(commandObject),
             "copyablePrompt": copyablePrompt
@@ -56,7 +56,7 @@ struct AgentToolkit {
     Clipboard history is private by default; do not include it unless the user explicitly wants clipboard-aware work.
     Sensitive clipboard records stay hidden unless the user explicitly asks for sensitive clipboard access.
     Save reusable findings through /library and save resumable state through /agent/handoff.
-    Call /ding when your task is complete, blocked, or needs the user's attention.
+    Call /ding only once for the user-visible task: immediately before your final answer, when the whole task is complete, blocked, or waiting for the user's attention. Do not call it after intermediate steps, tool batches, partial subtasks, or streaming segments.
     """
 
     private static let copyablePrompt = """
@@ -90,7 +90,7 @@ struct AgentToolkit {
     To save a reusable task bundle for other local agents, run:
     curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/agent/bundle -H 'Content-Type: application/json' -d '{"title":"TASK bundle","task":"TASK","limit":12,"source":"Agent"}'
 
-    When finished or blocked, notify the user:
+    Only once, immediately before the final answer for the whole user-visible task, notify the user if finished, blocked, or waiting for attention:
     curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/ding -H 'Content-Type: application/json' -d '{"message":"Agent task complete","source":"Agent","sound":"random","flashCount":10}'
     """
 

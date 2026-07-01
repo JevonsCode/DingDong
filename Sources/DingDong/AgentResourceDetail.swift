@@ -73,7 +73,7 @@ struct AgentResourceDetail {
                 return [
                     "Use clipboard content only for the current user-approved task.",
                     "Prefer promoting durable clipboard material into prompt, skill, MCP, or knowledge resources.",
-                    "Call /ding when the task is done, blocked, or needs user attention."
+                    "Call /ding only once for a user-visible task: immediately before the final answer, when the whole task is done, blocked, or waiting for user attention. Do not call it for intermediate steps or partial subtasks."
                 ]
             }
 
@@ -87,7 +87,7 @@ struct AgentResourceDetail {
         return [
             "Use pinned resources first when multiple records conflict.",
             "Use /agent/context for a bounded set of related resources.",
-            "Call /ding when the task is done, blocked, or needs user attention."
+            "Call /ding only once for a user-visible task: immediately before the final answer, when the whole task is done, blocked, or waiting for user attention. Do not call it for intermediate steps or partial subtasks."
         ]
     }
 

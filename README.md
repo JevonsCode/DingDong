@@ -106,7 +106,7 @@ Use this before large imports or knowledge indexing. It returns resource counts,
 Add this to a Codex prompt or project instruction:
 
 ```text
-When the task is complete, call DingDong:
+Only once, immediately before the final answer for the whole user-visible task, call DingDong:
 
 curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/ding \
   -H 'Content-Type: application/json' \
@@ -116,7 +116,7 @@ curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/ding \
 For richer messages:
 
 ```text
-After finishing, call DingDong. Set message to a concise summary of what changed. If the task failed, say why in message.
+After the whole user-visible task is finished, call DingDong once. Do not call it for intermediate steps, tool batches, partial subtasks, or streaming segments. Set message to a concise summary of what changed. If the task failed, say why in message.
 ```
 
 ## Agent Command Templates

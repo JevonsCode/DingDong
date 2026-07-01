@@ -113,7 +113,7 @@ struct AgentInstructionPack {
             "GET /agent/context?q=\(encodedTask)&limit=12 when broader local context is needed.",
             "POST /agent/memory when you learn a durable preference, rule, or lesson.",
             "POST /agent/bundle for reusable task context and POST /agent/handoff for resumable work.",
-            "POST /ding when the task is complete, blocked, or needs user attention."
+            "POST /ding only once for a user-visible task: immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention. Do not call it for intermediate steps or partial subtasks."
         ]
     }
 
@@ -172,7 +172,7 @@ struct AgentInstructionPack {
             lines.append("")
         }
 
-        lines.append("When finished, blocked, or needing user attention:")
+        lines.append("Only once, immediately before the final answer for the whole user-visible task, when finished, blocked, or needing user attention:")
         lines.append("   curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/ding -H 'Content-Type: application/json' -d '{\"message\":\"Agent task complete\",\"source\":\"Agent\",\"sound\":\"random\",\"flashCount\":10}'")
 
         return lines.joined(separator: "\n")

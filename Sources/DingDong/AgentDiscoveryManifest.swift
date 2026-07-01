@@ -42,7 +42,7 @@ struct AgentDiscoveryManifest {
                 "POST /agent/session for multi-step work",
                 "POST /agent/memory when a durable preference, rule, or lesson is learned",
                 "POST /agent/handoff before handing work to another local agent",
-                "POST /ding when work is complete, blocked, or needs user attention"
+                "POST /ding only once per user-visible task, immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention"
             ],
             "privacyDefaults": [
                 "clipboardContentIncluded": false,

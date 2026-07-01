@@ -100,7 +100,7 @@ struct AgentBridgePack {
                 "Register presence with POST /agent/presence for non-trivial work.",
                 "Call GET /agent/context?task=TASK for broader task-scoped resources when needed.",
                 "Call GET /agent/resource/{id} to load the full content for a selected skill, prompt, or MCP reference.",
-                "Call POST /ding when work is complete, blocked, or needs user attention."
+                "Call POST /ding only once for a user-visible task: immediately before the final answer, when the whole task is complete, blocked, or waiting for user attention. Do not call it after intermediate steps, tool batches, partial subtasks, or streaming segments."
             ]
         ]
     }

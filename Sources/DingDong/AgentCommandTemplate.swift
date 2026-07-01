@@ -10,7 +10,7 @@ struct AgentCommandTemplate: Equatable, Identifiable {
         AgentCommandTemplate(
             id: "ding-complete",
             title: "Task Complete",
-            summary: "Notify DingDong when an agent finishes a task.",
+            summary: "Notify DingDong once when an agent finishes the whole user-visible task.",
             command: """
             curl --noproxy 127.0.0.1 -sS -X POST http://127.0.0.1:8765/ding \\
               -H 'Content-Type: application/json' \\
