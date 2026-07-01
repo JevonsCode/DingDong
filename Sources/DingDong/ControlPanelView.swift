@@ -5329,17 +5329,60 @@ private struct InstantHoverHelpModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onHover { hovering in
-                if hovering {
-                    HoverTooltipWindow.shared.show(title: title)
-                } else {
-                    HoverTooltipWindow.shared.hide(title: title)
-                }
-            }
+            .background(HoverTooltipAnchor(title: title))
             .onDisappear {
                 HoverTooltipWindow.shared.hide(title: title)
             }
-            .help(title)
+    }
+}
+
+private struct HoverTooltipAnchor: NSViewRepresentable {
+    let title: String
+
+    func makeNSView(context: Context) -> HoverTooltipTrackingView {
+        let view = HoverTooltipTrackingView()
+        view.title = title
+        return view
+    }
+
+    func updateNSView(_ nsView: HoverTooltipTrackingView, context: Context) {
+        nsView.title = title
+    }
+}
+
+private final class HoverTooltipTrackingView: NSView {
+    var title = ""
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        trackingAreas.forEach(removeTrackingArea)
+        addTrackingArea(
+            NSTrackingArea(
+                rect: bounds,
+                options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited],
+                owner: self,
+                userInfo: nil
+            )
+        )
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        nil
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        guard let window else {
+            HoverTooltipWindow.shared.show(title: title, anchorRect: nil)
+            return
+        }
+
+        let localFrame = convert(bounds, to: nil)
+        let screenFrame = window.convertToScreen(localFrame)
+        HoverTooltipWindow.shared.show(title: title, anchorRect: screenFrame)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        HoverTooltipWindow.shared.hide(title: title)
     }
 }
 
@@ -5350,7 +5393,7 @@ private final class HoverTooltipWindow {
     private var panel: NSPanel?
     private var currentTitle: String?
 
-    func show(title: String) {
+    func show(title: String, anchorRect: NSRect?) {
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return
         }
@@ -5365,7 +5408,7 @@ private final class HoverTooltipWindow {
         panel = tooltipPanel
         tooltipPanel.contentView = hostingView
         tooltipPanel.setContentSize(contentSize)
-        tooltipPanel.setFrameOrigin(origin(for: contentSize))
+        tooltipPanel.setFrameOrigin(origin(for: contentSize, anchorRect: anchorRect))
 
         if !tooltipPanel.isVisible {
             tooltipPanel.alphaValue = 0
@@ -5407,17 +5450,20 @@ private final class HoverTooltipWindow {
         return panel
     }
 
-    private func origin(for size: NSSize) -> NSPoint {
-        let mouseLocation = NSEvent.mouseLocation
+    private func origin(for size: NSSize, anchorRect: NSRect?) -> NSPoint {
+        let anchor = anchorRect ?? NSRect(origin: NSEvent.mouseLocation, size: .zero)
+        let anchorCenterX = anchor.midX == 0 ? anchor.origin.x : anchor.midX
+        let anchorBottomY = anchor.minY == 0 ? anchor.origin.y : anchor.minY
+        let anchorTopY = anchor.maxY == 0 ? anchor.origin.y : anchor.maxY
         let screenFrame = NSScreen.screens
-            .first { $0.frame.contains(mouseLocation) }?
+            .first { $0.frame.intersects(anchor) || $0.frame.contains(anchor.origin) }?
             .visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
-        let gap: CGFloat = 12
-        var x = mouseLocation.x - size.width / 2
-        var y = mouseLocation.y - size.height - gap
+        let gap: CGFloat = 2
+        var x = anchorCenterX - size.width / 2
+        var y = anchorBottomY - size.height - gap
 
         if y < screenFrame.minY + gap {
-            y = mouseLocation.y + gap
+            y = anchorTopY + gap
         }
 
         x = min(max(x, screenFrame.minX + gap), screenFrame.maxX - size.width - gap)
